@@ -56,6 +56,16 @@
     .alarm-pulse {
       animation: pulse-border 2s infinite;
     }
+    @keyframes bell-ring {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(15deg); }
+      40% { transform: rotate(-12deg); }
+      60% { transform: rotate(8deg); }
+      80% { transform: rotate(-5deg); }
+    }
+    .bell-animate {
+      animation: bell-ring 1.8s ease-in-out infinite;
+    }
     @media print {
       body * { visibility: hidden; }
       #printable-permit, #printable-permit * { visibility: visible; }
@@ -186,7 +196,7 @@
         </div>
       </div>
 
-      <!-- ฝั่งขวา: ฟอร์ม Login และ Self-Registration (ไม่มีปุ่มทดสอบด่วน) -->
+      <!-- ฝั่งขวา: ฟอร์ม Login และ Self-Registration -->
       <div class="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-center space-y-5">
         <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
           <button type="button" id="auth-tab-login" onclick="switchAuthMode('login')" class="py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white text-pea-dark shadow transition flex items-center justify-center gap-1.5">
@@ -319,7 +329,7 @@
         </div>
       </div>
 
-      <!-- สถานะสรุปเร็ว + ปุ่ม Dashboard + ปุ่มลายเซ็น + ข้อมูลผู้ใช้งาน + ออกจากระบบ -->
+      <!-- สถานะสรุปเร็ว + ปุ่ม Dashboard + ปุ่มแจ้งเตือนกระดิ่ง + ปุ่มลายเซ็น + ข้อมูลผู้ใช้งาน + ออกจากระบบ -->
       <div class="flex items-center gap-2 text-xs flex-wrap">
         <div class="bg-white/10 backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
@@ -334,11 +344,45 @@
           <span>อนุมัติแล้ว: <strong id="badge-approved-count" class="text-emerald-300">0</strong></span>
         </div>
 
-        <!-- ปุ่มลัด Dashboard & ปฏิทินปฏิบัติงาน มุมขวาบน -->
+        <!-- ปุ่มลัด Dashboard & ปฏิทินปฏิบัติงาน -->
         <button type="button" id="top-dashboard-btn" onclick="switchTab('dashboard')" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-pea-dark font-bold text-xs shadow-md transition flex items-center gap-1.5 border border-amber-200">
           <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
           <span>Dashboard & ปฏิทินงาน</span>
         </button>
+
+        <!-- =============================================================== -->
+        <!-- ระบบแจ้งเตือนในหน้าเว็บ (กระดิ่ง + ตัวเลขยังไม่อ่าน + รายการแจ้งเตือน) -->
+        <!-- =============================================================== -->
+        <div id="notif-wrapper" class="relative">
+          <button type="button" id="notif-bell-btn" onclick="toggleNotificationDropdown(event)" class="relative p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 transition flex items-center justify-center" title="การแจ้งเตือนตามสิทธิ์ผู้ใช้งาน">
+            <i id="notif-bell-icon" data-lucide="bell" class="w-4 h-4 text-amber-300"></i>
+            <span id="notif-unread-badge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow border border-white">0</span>
+          </button>
+
+          <!-- กล่องรายการแจ้งเตือน Dropdown -->
+          <div id="notif-dropdown" class="hidden fixed sm:absolute right-3 sm:right-0 left-3 sm:left-auto mt-2 sm:w-96 bg-white text-slate-800 rounded-2xl shadow-2xl border border-purple-200 z-50 overflow-hidden">
+            <div class="bg-gradient-to-r from-pea-dark to-pea-purple text-white px-4 py-3 flex items-center justify-between gap-2">
+              <div>
+                <div class="font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                  <i data-lucide="bell-ring" class="w-4 h-4 text-amber-300"></i>
+                  <span>การแจ้งเตือนของฉัน</span>
+                  <span id="notif-header-count" class="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0 ใหม่</span>
+                </div>
+                <p id="notif-role-scope-label" class="text-[10px] text-purple-200 mt-0.5">-</p>
+              </div>
+              <button type="button" onclick="markAllNotificationsRead()" class="text-[11px] bg-white/15 hover:bg-white/25 text-amber-200 px-2.5 py-1 rounded-lg font-semibold transition shrink-0">
+                อ่านทั้งหมด
+              </button>
+            </div>
+
+            <div id="notif-list-container" class="max-h-96 overflow-y-auto divide-y divide-slate-100"></div>
+
+            <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <span>คลิกรายการเพื่อเปิดหน้า/ใบงานที่เกี่ยวข้อง</span>
+              <button type="button" onclick="closeNotificationDropdown()" class="text-pea-purple font-semibold hover:underline">ปิด</button>
+            </div>
+          </div>
+        </div>
 
         <!-- ปุ่มจัดการลายเซ็นอิเล็กทรอนิกส์ส่วนตัว -->
         <button type="button" onclick="openSignatureModal()" class="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-xs transition flex items-center gap-1.5" title="ตั้งค่าลายเซ็นอิเล็กทรอนิกส์ (วาดหรืออัปโหลด .PNG)">
@@ -641,7 +685,7 @@
     <!-- ===================================================================== -->
     <section id="view-request" class="space-y-6">
       <form id="wp-form" onsubmit="handlePermitSubmit(event)" class="space-y-6">
-        <!-- กล่องแจ้งสถานะเบื้องต้นสำหรับผู้ขออนุญาต (สั้น กระชับ สุภาพ ไม่เปิดเผยตรรกะภายใน) -->
+        <!-- กล่องแจ้งสถานะเบื้องต้นสำหรับผู้ขออนุญาต -->
         <div id="live-check-banner" class="rounded-2xl p-4 border-2 transition-all bg-slate-50 border-slate-200">
           <div class="flex items-start gap-3">
             <div id="live-check-icon" class="p-2.5 rounded-xl bg-slate-200 text-slate-600 shrink-0">
@@ -844,7 +888,7 @@
                   </div>
                 </div>
 
-                <!-- 2.2 ข้อมูลผู้ควบคุมงาน (กรอกชื่อ สังกัด ตำแหน่ง เบอร์โทร) -->
+                <!-- 2.2 ข้อมูลผู้ควบคุมงาน -->
                 <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                   <div class="flex items-center justify-between flex-wrap gap-2">
                     <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -1094,10 +1138,9 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- แท็บ 5: ใบอนุญาตฉบับจริง & รายงานผล (ค้นหา + เลือกการ์ดแบบคล้ายแท็บ 4) -->
+    <!-- แท็บ 5: ใบอนุญาตฉบับจริง & รายงานผล -->
     <!-- ===================================================================== -->
     <section id="view-document" class="hidden space-y-6">
-      <!-- ส่วนค้นหาและคัดกรองรายการ Work Permit แบบใช้งานง่าย -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-purple-200 space-y-4 no-print">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
@@ -1123,7 +1166,6 @@
           </div>
         </div>
 
-        <!-- ช่องค้นหาและตัวกรอง 4 ช่อง -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input type="text" id="doc-search-input" oninput="renderDocCardsList()" placeholder="ค้นหาเลขที่ใบงาน, สถานี, งาน, ผู้ควบคุมงาน..." class="rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm">
           <select id="doc-report-filter" onchange="renderDocCardsList()" class="rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm bg-white">
@@ -1138,18 +1180,13 @@
           <input type="date" id="doc-date-filter" onchange="renderDocCardsList()" class="rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm bg-white" title="กรองตามวันที่ปฏิบัติงาน">
         </div>
 
-        <!-- รายการการ์ด Work Permit ให้คลิกเลือกได้ทันที -->
         <div id="doc-cards-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-1"></div>
         <input type="hidden" id="doc-selector" value="">
       </div>
 
-      <!-- กล่องรายงานผลการปฏิบัติงานขนาดใหญ่ อ่านง่าย พิมพ์สะดวก -->
       <div id="work-report-box" class="bg-white rounded-2xl p-6 shadow-sm border-2 border-purple-200 no-print space-y-4"></div>
-
-      <!-- ประวัติการส่งและการดำเนินการ -->
       <div id="dispatch-log-box" class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200 no-print"></div>
 
-      <!-- กระดาษเอกสารใบอนุญาตทำงาน กฟภ. (FMO-SOH3-503-6203) พอดี 1 หน้า A4 -->
       <div class="overflow-x-auto pb-6">
         <div id="printable-permit" class="doc-paper max-w-[820px] mx-auto p-6 border border-slate-400 text-slate-900 text-[12.5px] leading-snug"></div>
       </div>
@@ -1159,7 +1196,6 @@
     <!-- แท็บ 6: แผนปฏิบัติงาน, อัปโหลดแผนเดือนต่อไป (PDF) และตารางสถานี -->
     <!-- ===================================================================== -->
     <section id="view-schedule" class="hidden space-y-6">
-      <!-- บันทึกการเบี่ยงเบนตารางกะประจำวัน (กรณีเข้าสถานีเดิมนอกรอบแผน) -->
       <div id="schedule-overrides-box" class="bg-white rounded-2xl p-5 shadow-sm border border-amber-200 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-sm sm:text-base font-bold text-amber-900 flex items-center gap-2">
@@ -1170,7 +1206,6 @@
         <div id="schedule-overrides-list" class="space-y-2 text-xs"></div>
       </div>
 
-      <!-- ส่วนอัปโหลดแผนปฏิบัติงานเดือนต่อไป (ไฟล์ PDF) -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-purple-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
@@ -1272,7 +1307,7 @@
         </div>
       </div>
 
-      <!-- ส่วนที่ 0.1: ตั้งค่าการเชื่อมต่อ Google Sheets Database (ฐานข้อมูลกลางข้ามเครื่อง) -->
+      <!-- ส่วนที่ 0.1: ตั้งค่าการเชื่อมต่อ Google Sheets Database -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border-2 border-emerald-300 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
@@ -1355,7 +1390,6 @@
           <input type="text" id="admin-user-search" oninput="renderAdminUsersTable()" placeholder="ค้นหาชื่อ, หน่วยงาน, เบอร์โทร, Username..." class="rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm w-full sm:w-64">
         </div>
 
-        <!-- ฟอร์มเพิ่มผู้ใช้งานใหม่โดย Admin -->
         <form onsubmit="adminCreateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 items-end">
           <div>
             <label class="block text-[11px] font-semibold text-slate-600 mb-1">ชื่อ</label>
@@ -1481,7 +1515,8 @@
       STATIONS: 'pea_wp_prod_stations_v1',
       ACTIVE_PLAN: 'pea_wp_prod_active_plan_v1',
       GDRIVE_CLIENT: 'pea_wp_prod_gdrive_client_v1',
-      GSHEET_URL: 'pea_wp_prod_gsheet_webapp_url_v1'
+      GSHEET_URL: 'pea_wp_prod_gsheet_webapp_url_v1',
+      NOTIF_READ: 'pea_wp_prod_notif_read_v1'
     };
 
     // =========================================================================
@@ -1685,7 +1720,10 @@
           renderStationTable();
           updateCounters();
           updatePendingUsersBadge();
-          if (currentUser) applyCurrentUserProfileToSystem();
+          if (currentUser) {
+            applyCurrentUserProfileToSystem();
+            renderNotifications();
+          }
           const now = getCurrentThaiDateTime();
           updateGoogleSheetBadge(`เชื่อมต่อ Google Sheet แล้ว (ดึงข้อมูลล่าสุด ${now.fullDateTime})`, true);
           if (notifyUser) showToast('ดึงข้อมูลล่าสุดจาก Google Sheet เรียบร้อยแล้ว!', 'success');
@@ -1873,14 +1911,322 @@
     let pendingRefAttachments = [];
 
     function resetSystemToFactoryDefaults() {
-      if (!confirm('ยืนยันการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น (ผู้ใช้ตั้งต้น 4 บัญชี และใบอนุญาตตัวอย่าง WPผจฟ.1 No.603/69)?')) return;
+      if (!confirm('ยืนยันการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น (ผู้ใช้ตั้งต้น 5 บัญชี และใบอนุญาตตัวอย่าง WPผจฟ.1 No.603/69)?')) return;
       localStorage.removeItem(STORAGE_KEYS.USERS);
       localStorage.removeItem(STORAGE_KEYS.PERMITS);
       localStorage.removeItem(STORAGE_KEYS.SEQ);
       localStorage.removeItem(STORAGE_KEYS.PLANS);
       localStorage.removeItem(STORAGE_KEYS.OVERRIDES);
+      localStorage.removeItem(STORAGE_KEYS.NOTIF_READ);
       location.reload();
     }
+
+    // =========================================================================
+    // 1.5 ระบบแจ้งเตือนในหน้าเว็บ (Notification Center ตามสิทธิ์ผู้ใช้งาน)
+    // =========================================================================
+    // กฎการกรองแจ้งเตือน:
+    // - ผู้ขออนุญาต (requester) / พนักงานสถานี (station_staff): แจ้งเตือนเฉพาะใบคำขอของตนที่อนุมัติแล้ว (APPROVED)
+    // - ผู้ตรวจสอบ (verifier) / admin: แจ้งเตือนทุกกระบวนการ (รอตรวจ, ผ่านตรวจ/รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)
+    // - ผู้อนุมัติ (approver): แจ้งเตือนเฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ (VERIFIED_PENDING_APPROVER)
+    function getReadNotificationIdsForUser(userId) {
+      try {
+        const allMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIF_READ) || '{}');
+        return Array.isArray(allMap[userId]) ? allMap[userId] : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveReadNotificationIdsForUser(userId, readIds) {
+      try {
+        const allMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIF_READ) || '{}');
+        allMap[userId] = Array.from(new Set(readIds));
+        localStorage.setItem(STORAGE_KEYS.NOTIF_READ, JSON.stringify(allMap));
+      } catch (_) {}
+    }
+
+    function buildNotificationsForCurrentUser() {
+      if (!currentUser) return [];
+      const role = currentUser.role;
+      const readSet = new Set(getReadNotificationIdsForUser(currentUser.id));
+      const userFullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
+      const items = [];
+
+      permits.forEach(p => {
+        const lastLog = (p.dispatchLogs && p.dispatchLogs.length > 0)
+          ? p.dispatchLogs[p.dispatchLogs.length - 1]
+          : null;
+        const latestTime = lastLog ? lastLog.time : formatThaiDate(p.requestDate);
+
+        // 1) ผู้ขออนุญาต / พนักงานสถานี: เฉพาะใบคำขอของตนที่อนุมัติแล้ว (APPROVED)
+        if (role === 'requester' || role === 'station_staff') {
+          const isOwnPermit =
+            p.requesterUserId === currentUser.id ||
+            (p.requesterFullName && p.requesterFullName.includes(userFullName));
+
+          if (isOwnPermit && p.status === 'APPROVED') {
+            const notifId = `${p.id}::APPROVED`;
+            items.push({
+              id: notifId,
+              permitId: p.id,
+              permitNo: p.permitNo,
+              station: p.station,
+              badgeText: 'อนุมัติแล้ว',
+              badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+              icon: 'check-circle-2',
+              iconColor: 'text-emerald-600 bg-emerald-50',
+              title: `${p.permitNo} • สฟ.${p.station} ได้รับการอนุมัติแล้ว`,
+              desc: `${p.workTitle} (${formatThaiDate(p.startDate)} ${p.startTime}-${p.endTime} น.) — อนุมัติโดย ${p.approverName}`,
+              time: latestTime,
+              targetTab: 'document',
+              isUnread: !readSet.has(notifId)
+            });
+          }
+        }
+
+        // 2) ผู้ตรวจสอบ (และ Admin): แจ้งเตือนทุกกระบวนการ (รอตรวจ, ผ่านตรวจ/รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)
+        else if (role === 'verifier' || role === 'admin') {
+          // 2.1 สถานะกระบวนการของใบงาน
+          let stageKey = p.status;
+          let badgeText = '';
+          let badgeClass = '';
+          let icon = 'file-text';
+          let iconColor = 'text-pea-purple bg-purple-50';
+          let title = '';
+          let desc = `${p.workTitle} • ผู้ขอ: ${p.requesterFullName || p.supervisorName} (${p.requesterDept || p.orgName})`;
+          let targetTab = 'document';
+
+          if (p.status === 'PENDING_VERIFIER') {
+            badgeText = 'รอตรวจสอบ';
+            badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+            icon = 'clock';
+            iconColor = 'text-amber-600 bg-amber-50';
+            title = `[รอตรวจ] ${p.permitNo} • สฟ.${p.station}`;
+            targetTab = 'verifier';
+          } else if (p.status === 'VERIFIED_PENDING_APPROVER') {
+            badgeText = 'ผ่านตรวจ/รออนุมัติ';
+            badgeClass = 'bg-sky-100 text-sky-800 border-sky-300';
+            icon = 'shield-check';
+            iconColor = 'text-sky-600 bg-sky-50';
+            title = `[รออนุมัติ กปบ.(ก3)] ${p.permitNo} • สฟ.${p.station}`;
+            targetTab = 'approver';
+          } else if (p.status === 'APPROVED') {
+            badgeText = 'อนุมัติแล้ว';
+            badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+            icon = 'check-circle-2';
+            iconColor = 'text-emerald-600 bg-emerald-50';
+            title = `[อนุมัติแล้ว] ${p.permitNo} • สฟ.${p.station}`;
+            targetTab = 'document';
+          } else if (p.status === 'REJECTED') {
+            badgeText = 'ตีกลับ';
+            badgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+            icon = 'x-circle';
+            iconColor = 'text-rose-600 bg-rose-50';
+            title = `[ตีกลับ] ${p.permitNo} • สฟ.${p.station}`;
+            targetTab = 'verifier';
+          }
+
+          const mainNotifId = `${p.id}::STAGE_${stageKey}`;
+          items.push({
+            id: mainNotifId,
+            permitId: p.id,
+            permitNo: p.permitNo,
+            station: p.station,
+            badgeText,
+            badgeClass,
+            icon,
+            iconColor,
+            title,
+            desc,
+            time: latestTime,
+            targetTab,
+            isUnread: !readSet.has(mainNotifId)
+          });
+
+          // 2.2 แจ้งเตือนกระบวนการรายงานผลปิดงาน (ถ้ามี)
+          if (p.workReport) {
+            const repNotifId = `${p.id}::REPORTED_${p.workReport.reportedAt}`;
+            items.push({
+              id: repNotifId,
+              permitId: p.id,
+              permitNo: p.permitNo,
+              station: p.station,
+              badgeText: 'รายงานผลแล้ว',
+              badgeClass: 'bg-purple-100 text-pea-dark border-purple-300',
+              icon: 'clipboard-check',
+              iconColor: 'text-pea-purple bg-purple-50',
+              title: `[รายงานผลปิดงาน] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workReport.closeState} — โดย ${p.workReport.reporterName}`,
+              time: p.workReport.reportedAt,
+              targetTab: 'document',
+              isUnread: !readSet.has(repNotifId)
+            });
+          }
+        }
+
+        // 3) ผู้อนุมัติ: แจ้งเตือนเฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ (VERIFIED_PENDING_APPROVER)
+        else if (role === 'approver') {
+          if (p.status === 'VERIFIED_PENDING_APPROVER') {
+            const appNotifId = `${p.id}::VERIFIED_PENDING_APPROVER`;
+            items.push({
+              id: appNotifId,
+              permitId: p.id,
+              permitNo: p.permitNo,
+              station: p.station,
+              badgeText: 'ผ่านตรวจ/รออนุมัติ',
+              badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
+              icon: 'stamp',
+              iconColor: 'text-sky-600 bg-sky-50',
+              title: `รออนุมัติ: ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workTitle} • ตรวจสอบแล้วโดย ${p.verifierName} (${formatThaiDate(p.startDate)})`,
+              time: latestTime,
+              targetTab: 'approver',
+              isUnread: !readSet.has(appNotifId)
+            });
+          }
+        }
+      });
+
+      return items;
+    }
+
+    function renderNotifications() {
+      if (!currentUser) return;
+      const items = buildNotificationsForCurrentUser();
+      const unreadCount = items.filter(i => i.isUnread).length;
+
+      const badge = document.getElementById('notif-unread-badge');
+      const bellIcon = document.getElementById('notif-bell-icon');
+      const headerCount = document.getElementById('notif-header-count');
+      const scopeLabel = document.getElementById('notif-role-scope-label');
+      const listContainer = document.getElementById('notif-list-container');
+
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      if (bellIcon) {
+        if (unreadCount > 0) bellIcon.classList.add('bell-animate');
+        else bellIcon.classList.remove('bell-animate');
+      }
+
+      if (headerCount) {
+        headerCount.textContent = unreadCount > 0 ? `${unreadCount} ยังไม่อ่าน` : 'อ่านครบแล้ว';
+        headerCount.className = unreadCount > 0
+          ? 'bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full'
+          : 'bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full';
+      }
+
+      if (scopeLabel) {
+        if (currentUser.role === 'requester' || currentUser.role === 'station_staff') {
+          scopeLabel.textContent = 'สิทธิ์แจ้งเตือน: เฉพาะคำขอของท่านที่อนุมัติแล้ว';
+        } else if (currentUser.role === 'verifier' || currentUser.role === 'admin') {
+          scopeLabel.textContent = 'สิทธิ์แจ้งเตือน: ทุกกระบวนการ (รอตรวจ, รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)';
+        } else if (currentUser.role === 'approver') {
+          scopeLabel.textContent = 'สิทธิ์แจ้งเตือน: เฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ';
+        }
+      }
+
+      if (!listContainer) return;
+      if (items.length === 0) {
+        listContainer.innerHTML = `
+          <div class="p-8 text-center space-y-1.5">
+            <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <i data-lucide="bell-off" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs font-semibold text-slate-600">ไม่มีรายการแจ้งเตือนในขณะนี้</p>
+            <p class="text-[11px] text-slate-400">เมื่อมีรายการที่ตรงตามสิทธิ์ของท่าน ระบบจะแจ้งเตือนที่นี่ทันที</p>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      listContainer.innerHTML = items.map(item => `
+        <button type="button" onclick="openNotificationItem('${item.id}', '${item.permitId}', '${item.targetTab}')" class="w-full text-left p-3.5 transition flex items-start gap-3 ${item.isUnread ? 'bg-purple-50/80 hover:bg-purple-100/70' : 'bg-white hover:bg-slate-50'}">
+          <div class="w-9 h-9 rounded-xl ${item.iconColor} flex items-center justify-center shrink-0 mt-0.5 border border-black/5">
+            <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex items-center justify-between gap-1.5">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.badgeClass}">${item.badgeText}</span>
+              <span class="text-[10px] text-slate-400 truncate">${item.time}</span>
+            </div>
+            <div class="text-xs font-bold text-slate-800 leading-snug flex items-center gap-1.5">
+              ${item.isUnread ? '<span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>' : ''}
+              <span class="truncate">${item.title}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">${item.desc}</p>
+          </div>
+        </button>
+      `).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleNotificationDropdown(event) {
+      if (event) event.stopPropagation();
+      const dd = document.getElementById('notif-dropdown');
+      if (!dd) return;
+      const isHidden = dd.classList.contains('hidden');
+      if (isHidden) {
+        renderNotifications();
+        dd.classList.remove('hidden');
+      } else {
+        dd.classList.add('hidden');
+      }
+    }
+
+    function closeNotificationDropdown() {
+      const dd = document.getElementById('notif-dropdown');
+      if (dd) dd.classList.add('hidden');
+    }
+
+    function markAllNotificationsRead() {
+      if (!currentUser) return;
+      const items = buildNotificationsForCurrentUser();
+      const existingRead = getReadNotificationIdsForUser(currentUser.id);
+      const allIds = [...existingRead, ...items.map(i => i.id)];
+      saveReadNotificationIdsForUser(currentUser.id, allIds);
+      renderNotifications();
+      showToast('ทำเครื่องหมายว่าอ่านการแจ้งเตือนทั้งหมดแล้ว', 'info');
+    }
+
+    function openNotificationItem(notifId, permitId, targetTab) {
+      if (currentUser && notifId) {
+        const existingRead = getReadNotificationIdsForUser(currentUser.id);
+        existingRead.push(notifId);
+        saveReadNotificationIdsForUser(currentUser.id, existingRead);
+      }
+
+      closeNotificationDropdown();
+      renderNotifications();
+
+      const allowed = currentUser ? (ROLE_ALLOWED_TABS[currentUser.role] || []) : [];
+      if (targetTab === 'verifier' && allowed.includes('verifier')) {
+        renderVerifierQueue();
+        switchTab('verifier');
+      } else if (targetTab === 'approver' && allowed.includes('approver')) {
+        renderApproverQueue();
+        switchTab('approver');
+      } else {
+        openDocumentPreview(permitId);
+      }
+    }
+
+    // ปิด Dropdown แจ้งเตือนเมื่อคลิกพื้นที่อื่นนอกกรอบ
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('notif-wrapper');
+      const dd = document.getElementById('notif-dropdown');
+      if (wrapper && dd && !dd.classList.contains('hidden') && !wrapper.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
 
     // =========================================================================
     // 2. ฐานข้อมูล 43 สถานีไฟฟ้า + หน่วยปฏิบัติการ 11 หน่วย (1 คน/ช่วงเวลา)
@@ -2095,6 +2441,7 @@
 
     function logoutUser() {
       currentUser = null;
+      closeNotificationDropdown();
       document.getElementById('main-app-shell').classList.add('hidden');
       document.getElementById('main-app-shell').classList.remove('flex');
       document.getElementById('auth-gate-screen').classList.remove('hidden');
@@ -2109,7 +2456,6 @@
       document.getElementById('current-user-fullname').textContent = `${fullName} (${currentUser.department})`;
       document.getElementById('current-user-role-dept').textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
 
-      // เติมข้อมูลผู้ขออนุญาตตามบัญชีผู้ใช้งานที่ล็อกอินอัตโนมัติ (แยกจากผู้ควบคุมงาน)
       const reqNameEl = document.getElementById('requesterFullName');
       const reqDeptEl = document.getElementById('requesterDept');
       const reqPhoneEl = document.getElementById('requesterPhone');
@@ -2117,7 +2463,6 @@
       if (reqDeptEl) reqDeptEl.value = currentUser.department || '-';
       if (reqPhoneEl) reqPhoneEl.value = currentUser.phone || '-';
 
-      // แสดง/ซ่อนปุ่มแท็บตามสิทธิ์บทบาท
       const allowedTabs = ROLE_ALLOWED_TABS[currentUser.role] || ['dashboard', 'request', 'status', 'document'];
       const allTabs = ['request', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin'];
       allTabs.forEach(t => {
@@ -2129,6 +2474,7 @@
 
       updateCounters();
       updatePendingUsersBadge();
+      renderNotifications();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -2447,7 +2793,6 @@
       const isTemporaryStation = !!(stObj && stObj.type === 'ชั่วคราว');
       const blockedTempNoStaff = isTemporaryStation && (staffArrange === 'ไม่จัดพนักงาน');
 
-      // ใบอนุญาตที่ช่วงเวลาคาบเกี่ยวกันในหน่วยปฏิบัติการเดียวกัน (unitId)
       const unitOverlaps = permits.filter(p => {
         if (p.status === 'REJECTED') return false;
         const pSt = STATIONS_MASTER.find(s => s.name === p.station);
@@ -2461,7 +2806,6 @@
       const sameStationOverlaps = unitOverlaps.filter(p => p.station === station);
       const diffStationSameUnitOverlaps = unitOverlaps.filter(p => p.station !== station);
 
-      // ตรวจสอบตารางกะของสถานี
       const dayOfWeek = THAI_DAYS[new Date(`${sDate}T00:00:00`).getDay()];
       const startHour = parseInt(sTime.split(':')[0], 10);
       let matchesMasterPlan = false;
@@ -2470,7 +2814,6 @@
 
       if (stObj) {
         if (stObj.isBase) {
-          // สถานีที่ตั้งหน่วย: วันปกติช่วงกลางวัน (ก่อน 16:00) ชุดเวรออกไปดูแลลูกหน่วย จะกลับมาอยู่ 16.00-24.00 น.
           const is24HrDay = stObj.days.includes(dayOfWeek);
           if (is24HrDay || startHour >= 16) {
             matchesMasterPlan = true;
@@ -2481,7 +2824,6 @@
             planMessage = `เข้าปฏิบัติงานที่ตั้งหน่วยช่วงกลางวันวัน${dayOfWeek} (พนักงานอยู่รองรับที่สถานี ถือว่าวันนั้นไม่ได้ปฏิบัติตามตารางออกตรวจลูกหน่วยปกติ)`;
           }
         } else {
-          // สถานีลูกหน่วย (Fully Unmanned)
           const isPlannedDay = stObj.days.includes(dayOfWeek);
           if (isPlannedDay) {
             matchesMasterPlan = true;
@@ -2494,11 +2836,6 @@
         }
       }
 
-      // เงื่อนไขตัดสินการผ่านผู้ตรวจสอบอัตโนมัติ (ใช้ชื่อ หผ.จฟ.1):
-      // 1) กรณีเลือก "ไม่จัดพนักงาน" -> บังคับผู้ตรวจสอบตรวจเองทุกครั้ง
-      // 2) กรณีซ้อนทับข้ามสถานีในหน่วยเดียวกัน (diffStationSameUnitOverlaps > 0) -> แจ้งเตือนต้องจัดคนเพิ่ม 1 คน และส่งผู้ตรวจสอบพิจารณา
-      // 3) กรณีเข้าสถานีเดิมร่วมกับหน่วยงานอื่น (sameStationOverlaps > 0) และจัดพนักงาน -> ผ่านผู้ตรวจสอบได้เลย
-      // 4) กรณีปฏิบัติงานตามแผนปกติ (workCategory === 'งานตามแผน') และจัดพนักงาน -> ผ่านไปต่อได้เลย
       const hasCrossStationConflict = diffStationSameUnitOverlaps.length > 0;
       const hasSameStationShared = sameStationOverlaps.length > 0;
       const forceManualVerifier = (staffArrange === 'ไม่จัดพนักงาน') || hasCrossStationConflict || (workCategory !== 'งานตามแผน' && !hasSameStationShared);
@@ -2568,7 +2905,6 @@
         return;
       }
 
-      // ข้อความหน้าผู้ขออนุญาต: สั้น กระชับ สุภาพ แบบแจ้งหน่วยงานภายนอก
       if (res.hasCrossStationConflict) {
         banner.classList.add('bg-rose-50', 'border-rose-500', 'alarm-pulse');
         iconBox.className = 'p-2.5 rounded-xl bg-rose-600 text-white shrink-0';
@@ -2660,7 +2996,6 @@
       const generated = getNextPermitNumber(startIso, true);
       const now = getCurrentThaiDateTime();
 
-      // ใช้ชื่อ-ตำแหน่งของ หผ.จฟ.1 (นายภานุพงศ์ เจนสุริยะกุล) เมื่อผ่านการตรวจสอบอัตโนมัติ
       const autoVerifier = usersDb.find(u => u.id === 'USR-PANUPONG') || {
         id: 'USR-PANUPONG',
         firstName: 'ภานุพงศ์',
@@ -2766,6 +3101,7 @@
 
       saveAllToLocalStorage();
       updateCounters();
+      renderNotifications();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -2933,6 +3269,7 @@
 
       saveAllToLocalStorage();
       updateCounters();
+      renderNotifications();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -2958,6 +3295,7 @@
 
       saveAllToLocalStorage();
       updateCounters();
+      renderNotifications();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -3066,6 +3404,7 @@
 
       saveAllToLocalStorage();
       updateCounters();
+      renderNotifications();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -3109,6 +3448,7 @@
 
       saveAllToLocalStorage();
       updateCounters();
+      renderNotifications();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -3474,14 +3814,12 @@
       switchTab('document');
     }
 
-    // สร้าง PDF พอดีหน้า A4 ไร้ช่องว่างหัวกระดาษ + รวมเอกสารแนบ (PDF / PNG / JPG)
     async function buildMergedPermitPdf(permit) {
       const sourceEl = document.getElementById('printable-permit');
       if (!sourceEl || !window.html2pdf || !window.PDFLib) {
         throw new Error('PDF libraries not loaded');
       }
 
-      // 1) Clone กระดาษเอกสารไปวางชิดมุมบนซ้าย (top: 0, left: 0) นอกสายตา เพื่อแก้ปัญหาหัวกระดาษเหลือพื้นที่ว่างเยอะ
       const host = document.createElement('div');
       host.style.position = 'fixed';
       host.style.left = '-10000px';
@@ -3512,7 +3850,6 @@
       const baseArrayBuffer = await html2pdf().set(opt).from(clone).outputPdf('arraybuffer');
       host.remove();
 
-      // 2) ใช้ pdf-lib รวมหน้าใบอนุญาตหลักเข้ากับเอกสารแนบอ้างอิงทั้งหมด
       const { PDFDocument } = window.PDFLib;
       const mergedPdf = await PDFDocument.create();
       const baseDoc = await PDFDocument.load(baseArrayBuffer);
@@ -3688,6 +4025,7 @@
       });
 
       saveAllToLocalStorage();
+      renderNotifications();
       renderDocCardsList(p.id);
       renderPermitDocument();
       renderStatusTracker();
@@ -3921,7 +4259,7 @@
     // 11. หน้า DASHBOARD & ปฏิทินการปฏิบัติงานตาม WORK PERMIT
     // =========================================================================
     let dashCalYear = 2026;
-    let dashCalMonth = 10; // พ.ย. 2569 (0-indexed: 10 = พฤศจิกายน)
+    let dashCalMonth = 10;
     let dashSelectedDate = '2026-11-28';
 
     function renderDashboard() {
@@ -4608,6 +4946,7 @@
       const removed = permits.splice(idx, 1)[0];
       saveAllToLocalStorage();
       updateCounters();
+      renderNotifications();
       renderAdminPermitsList();
       renderVerifierQueue();
       renderApproverQueue();
@@ -4757,7 +5096,6 @@
         if (ind) ind.textContent = `แผนหลักที่ใช้งาน: ${activePlanLabel}`;
       }
 
-      // แปลงเวลาของใบอนุญาตที่มีอยู่ทั้งหมดให้เป็น 24 ชั่วโมง (HH:mm)
       permits = permits.map(p => ({
         ...p,
         startTime: to24HourTime(p.startTime),
@@ -4778,7 +5116,6 @@
       updatePendingUsersBadge();
       if (window.lucide) lucide.createIcons();
 
-      // หากตั้งค่า Google Sheet URL ไว้แล้ว ให้ดึงข้อมูลล่าสุดจาก Google Sheet อัตโนมัติ
       if (getGoogleSheetWebAppUrl()) {
         await syncPullFromGoogleSheet(false);
       }
