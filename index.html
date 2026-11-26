@@ -684,6 +684,31 @@
     <!-- แท็บ 1: หน้ายื่นคำขอ Work Permit (สำหรับแผนกที่ขอเข้าสถานี) -->
     <!-- ===================================================================== -->
     <section id="view-request" class="space-y-6">
+      <!-- Smart Feature ข้อ 2: แถบคัดลอกใบงานเดิม (Clone Permit) & ล้างฟอร์มด่วน -->
+      <div class="bg-gradient-to-r from-purple-50 via-white to-amber-50/60 rounded-2xl p-4 border border-purple-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex items-start sm:items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-pea-purple text-white shrink-0">
+            <i data-lucide="copy-plus" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-xs sm:text-sm font-bold text-pea-dark">Smart Auto-Fill: คัดลอกข้อมูลจากใบงานเดิม (Clone Permit)</h3>
+            <p class="text-[11px] text-slate-500">เลือกใบงานที่เคยยื่นไว้เพื่อดึงข้อมูลสถานี งาน เครื่องมือ ผู้ควบคุมงาน และ PPE มาเติมอัตโนมัติใน 1 คลิก</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <select id="clone-permit-selector" class="rounded-xl border border-purple-300 px-3 py-2 text-xs bg-white font-medium text-slate-800 max-w-xs">
+            <option value="">-- เลือกใบงานเดิมที่ต้องการคัดลอก --</option>
+          </select>
+          <button type="button" onclick="cloneSelectedPermitToForm()" class="px-3.5 py-2 rounded-xl bg-pea-purple hover:bg-pea-dark text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+            <span>คัดลอกข้อมูลใส่ฟอร์ม</span>
+          </button>
+          <button type="button" onclick="resetRequestFormClean()" class="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 text-xs font-semibold transition">
+            ล้างฟอร์มใหม่
+          </button>
+        </div>
+      </div>
+
       <form id="wp-form" onsubmit="handlePermitSubmit(event)" class="space-y-6">
         <!-- กล่องแจ้งสถานะเบื้องต้นสำหรับผู้ขออนุญาต -->
         <div id="live-check-banner" class="rounded-2xl p-4 border-2 transition-all bg-slate-50 border-slate-200">
@@ -838,11 +863,13 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-semibold text-slate-700 mb-1">งานที่จะทำ <span class="text-rose-500">*</span></label>
-                  <input type="text" id="workTitle" required placeholder="เช่น แก้ไข Load Report SCPS / บำรุงรักษา Relay..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-pea-purple focus:border-pea-purple">
+                  <input type="text" id="workTitle" list="work-title-datalist" required placeholder="เช่น แก้ไข Load Report SCPS / บำรุงรักษา Relay..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-pea-purple focus:border-pea-purple">
+                  <datalist id="work-title-datalist"></datalist>
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-700 mb-1">อุปกรณ์/เครื่องมือในการทำงาน <span class="text-rose-500">*</span></label>
-                  <input type="text" id="equipment" required placeholder="เช่น คอมพิวเตอร์, เครื่องทดสอบรีเลย์, มัลติมิเตอร์..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-pea-purple focus:border-pea-purple">
+                  <input type="text" id="equipment" list="equipment-datalist" required placeholder="เช่น คอมพิวเตอร์, เครื่องทดสอบรีเลย์, มัลติมิเตอร์..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-pea-purple focus:border-pea-purple">
+                  <datalist id="equipment-datalist"></datalist>
                 </div>
               </div>
             </div>
@@ -888,7 +915,7 @@
                   </div>
                 </div>
 
-                <!-- 2.2 ข้อมูลผู้ควบคุมงาน -->
+                <!-- 2.2 ข้อมูลผู้ควบคุมงาน (รองรับ Smart Autocomplete ดึงประวัติสังกัด/ตำแหน่ง/เบอร์โทรอัตโนมัติ) -->
                 <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                   <div class="flex items-center justify-between flex-wrap gap-2">
                     <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -910,7 +937,8 @@
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-700 mb-1">ชื่อ-นามสกุล ผู้ควบคุมงาน <span class="text-rose-500">*</span></label>
-                      <input type="text" id="supervisorName" required placeholder="เช่น นายทรรศนะ เฮงเจริญสุข" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                      <input type="text" id="supervisorName" list="supervisor-directory-list" oninput="onSupervisorNameAutoFill()" required placeholder="พิมพ์หรือเลือกชื่อจากประวัติ..." class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                      <datalist id="supervisor-directory-list"></datalist>
                     </div>
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-700 mb-1">สังกัด / หน่วยงาน / บริษัท <span class="text-rose-500">*</span></label>
@@ -1289,14 +1317,14 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- แท็บ 7: USER ADMIN CONSOLE & ตั้งค่า GOOGLE DRIVE API -->
+    <!-- แท็บ 7: USER ADMIN CONSOLE & ตั้งค่า GOOGLE DRIVE / WEBHOOK AUTOMATION -->
     <!-- ===================================================================== -->
     <section id="view-admin" class="hidden space-y-6">
       <div class="bg-gradient-to-r from-slate-900 via-pea-dark to-pea-purple text-white rounded-2xl p-5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
           <span class="text-xs font-bold bg-amber-400 text-pea-dark px-2.5 py-0.5 rounded-full">SUPER USER ADMIN CONSOLE</span>
-          <h2 class="text-lg sm:text-xl font-bold">ศูนย์ควบคุมผู้ใช้งาน กำหนดสิทธิ์การเข้าถึง เชื่อมต่อ Google Drive และปรับแต่งระบบ</h2>
-          <p class="text-xs text-purple-200">อนุมัติผู้สมัครใหม่ กำหนดสิทธิ์บทบาท ตั้งค่า Google Drive OAuth Client ID แก้ไขเลขรันเอกสาร และสำรองข้อมูล</p>
+          <h2 class="text-lg sm:text-xl font-bold">ศูนย์ควบคุมผู้ใช้งาน กำหนดสิทธิ์การเข้าถึง เชื่อมต่อ Google Drive และระบบแจ้งเตือนอัตโนมัติ</h2>
+          <p class="text-xs text-purple-200">อนุมัติผู้สมัครใหม่ กำหนดสิทธิ์บทบาท ตั้งค่า Google Drive OAuth Client ID ตั้งค่า Webhook แจ้งเตือน และสำรองข้อมูล</p>
         </div>
         <div class="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-xs space-y-1">
           <div>ผู้สมัครรออนุมัติสิทธิ์: <strong id="admin-pending-count" class="text-amber-300 text-base">0</strong> บัญชี</div>
@@ -1345,7 +1373,59 @@
         </div>
       </div>
 
-      <!-- ส่วนที่ 0.2: ตั้งค่าการเชื่อมต่อ Google Drive Cloud จริง -->
+      <!-- ส่วนที่ 0.2: Smart Feature ข้อ 4 — ตั้งค่าระบบแจ้งเตือนอัตโนมัติ (LINE / Telegram / Email Webhook) -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border-2 border-amber-300 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div>
+            <span class="text-[11px] font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full">SMART NOTIFICATION AUTOMATION (ข้อ 4)</span>
+            <h3 class="text-base font-bold text-amber-950 mt-1 flex items-center gap-2">
+              <i data-lucide="webhook" class="w-5 h-5 text-amber-600"></i>
+              <span>ตั้งค่าระบบส่งแจ้งเตือนอัตโนมัติ (LINE Messaging / Telegram / Google Apps Script Email)</span>
+            </h3>
+            <p class="text-xs text-slate-600">ระบบจะส่งข้อความสรุปสถานะใบงานไปยัง Webhook ปลายทางโดยอัตโนมัติเมื่อมีการยื่นคำขอ ตรวจสอบผ่าน อนุมัติ ตีกลับ หรือรายงานผลปิดงาน</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="testWebhookNotification()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm flex items-center gap-1.5">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>ทดสอบส่งแจ้งเตือน</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end text-xs">
+          <div class="md:col-span-3">
+            <label class="block font-semibold text-slate-700 mb-1">ช่องทาง Webhook ปลายทาง</label>
+            <select id="adm-webhook-type" class="w-full rounded-xl border border-slate-300 px-3 py-2 bg-white font-medium">
+              <option value="GAS_RELAY">Google Apps Script Relay (LINE / Email)</option>
+              <option value="TELEGRAM">Telegram Bot API (sendMessage)</option>
+              <option value="GENERIC_JSON">Custom Webhook (JSON POST)</option>
+            </select>
+          </div>
+          <div class="md:col-span-5">
+            <label class="block font-semibold text-slate-700 mb-1">Webhook URL / Apps Script Endpoint</label>
+            <input type="url" id="adm-webhook-url" placeholder="https://script.google.com/macros/s/.../exec หรือ https://api.telegram.org/bot.../sendMessage" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs bg-slate-50 focus:bg-white">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block font-semibold text-slate-700 mb-1">Chat ID / Target ID (ถ้ามี)</label>
+            <input type="text" id="adm-webhook-target" placeholder="เช่น -100123456789" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs bg-slate-50 focus:bg-white">
+          </div>
+          <div class="md:col-span-2">
+            <button type="button" onclick="saveWebhookConfig()" class="w-full py-2 px-4 rounded-xl bg-pea-purple hover:bg-pea-dark text-white font-bold">
+              บันทึกการแจ้งเตือน
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-700 bg-amber-50/60 p-3 rounded-xl border border-amber-200">
+          <label class="inline-flex items-center gap-2 cursor-pointer font-semibold">
+            <input type="checkbox" id="adm-webhook-enabled" class="rounded text-pea-purple">
+            <span>เปิดใช้งานการส่งแจ้งเตือนอัตโนมัติทุกขั้นตอน</span>
+          </label>
+          <span id="adm-webhook-last-log" class="text-[11px] text-slate-500 ml-auto">สถานะ: ยังไม่ได้ตั้งค่า Webhook</span>
+        </div>
+      </div>
+
+      <!-- ส่วนที่ 0.3: ตั้งค่าการเชื่อมต่อ Google Drive Cloud จริง -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-sky-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
@@ -1516,7 +1596,9 @@
       ACTIVE_PLAN: 'pea_wp_prod_active_plan_v1',
       GDRIVE_CLIENT: 'pea_wp_prod_gdrive_client_v1',
       GSHEET_URL: 'pea_wp_prod_gsheet_webapp_url_v1',
-      NOTIF_READ: 'pea_wp_prod_notif_read_v1'
+      NOTIF_READ: 'pea_wp_prod_notif_read_v1',
+      SESSION_USER_ID: 'pea_wp_prod_session_user_id_v1',
+      WEBHOOK_CONFIG: 'pea_wp_prod_webhook_cfg_v1'
     };
 
     // =========================================================================
@@ -1717,6 +1799,7 @@
           }
           saveAllToLocalStorage(true);
           populateStationDropdowns();
+          refreshSmartFormHelpers();
           renderStationTable();
           updateCounters();
           updatePendingUsersBadge();
@@ -1732,6 +1815,109 @@
         console.warn('Google Sheet sync pull warning:', err);
         if (notifyUser) showToast('ไม่สามารถดึงข้อมูลจาก Google Sheet ได้', 'error');
       }
+    }
+
+    // =========================================================================
+    // Smart Feature ข้อ 4: ระบบส่งแจ้งเตือนอัตโนมัติ (LINE / Telegram / Email Webhook)
+    // =========================================================================
+    function getWebhookConfig() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.WEBHOOK_CONFIG) || 'null') || {
+          enabled: false,
+          type: 'GAS_RELAY',
+          url: '',
+          targetId: '',
+          lastStatus: ''
+        };
+      } catch (_) {
+        return { enabled: false, type: 'GAS_RELAY', url: '', targetId: '', lastStatus: '' };
+      }
+    }
+
+    function saveWebhookConfig() {
+      const cfg = {
+        enabled: !!document.getElementById('adm-webhook-enabled')?.checked,
+        type: document.getElementById('adm-webhook-type')?.value || 'GAS_RELAY',
+        url: (document.getElementById('adm-webhook-url')?.value || '').trim(),
+        targetId: (document.getElementById('adm-webhook-target')?.value || '').trim(),
+        lastStatus: `บันทึกการตั้งค่าเมื่อ ${getCurrentThaiDateTime().fullDateTime}`
+      };
+      localStorage.setItem(STORAGE_KEYS.WEBHOOK_CONFIG, JSON.stringify(cfg));
+      const logEl = document.getElementById('adm-webhook-last-log');
+      if (logEl) logEl.textContent = cfg.lastStatus;
+      showToast('บันทึกการตั้งค่า Webhook แจ้งเตือนอัตโนมัติเรียบร้อยแล้ว', 'success');
+    }
+
+    async function dispatchExternalNotification(eventType, permit, extraSummary = '') {
+      const cfg = getWebhookConfig();
+      if (!cfg.enabled || !cfg.url) return;
+
+      const textMsg = [
+        `⚡ [PEA Work Permit ผจฟ.1 กปบ.(ก3)]`,
+        `สถานะ: ${eventType}`,
+        `เลขที่: ${permit.permitNo}`,
+        `สถานีไฟฟ้า: สฟ.${permit.station}`,
+        `วัน-เวลา: ${formatThaiDate(permit.startDate)} (${permit.startTime}-${permit.endTime} น.)`,
+        `งาน: ${permit.workTitle}`,
+        `ผู้ขอ/ผู้ควบคุม: ${permit.requesterFullName || '-'} / ${permit.supervisorName || '-'} (${permit.orgName || '-'})`,
+        extraSummary ? `หมายเหตุ: ${extraSummary}` : ''
+      ].filter(Boolean).join('\n');
+
+      try {
+        if (cfg.type === 'TELEGRAM') {
+          await fetch(cfg.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: cfg.targetId,
+              text: textMsg
+            })
+          });
+        } else {
+          await fetch(cfg.url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'notifyWorkPermit',
+              eventType,
+              targetId: cfg.targetId,
+              message: textMsg,
+              permitNo: permit.permitNo,
+              station: permit.station,
+              status: permit.status,
+              requesterEmail: permit.requesterEmail
+            })
+          });
+        }
+        cfg.lastStatus = `ส่งแจ้งเตือนล่าสุดสำเร็จ (${getCurrentThaiDateTime().fullDateTime})`;
+        localStorage.setItem(STORAGE_KEYS.WEBHOOK_CONFIG, JSON.stringify(cfg));
+      } catch (err) {
+        console.warn('Webhook dispatch warning:', err);
+      }
+    }
+
+    async function testWebhookNotification() {
+      const url = (document.getElementById('adm-webhook-url')?.value || '').trim();
+      if (!url) {
+        showToast('กรุณากรอก Webhook URL ก่อนทดสอบส่งแจ้งเตือน', 'warning');
+        return;
+      }
+      saveWebhookConfig();
+      const samplePermit = permits[0] || {
+        permitNo: 'WPผจฟ.1 No.TEST/69',
+        station: 'บางเลน 1',
+        startDate: getCurrentThaiDateTime().isoDate,
+        startTime: '08:30',
+        endTime: '16:00',
+        workTitle: 'ทดสอบระบบแจ้งเตือนอัตโนมัติ PEA Work Permit',
+        requesterFullName: 'User Admin',
+        supervisorName: 'ผู้ทดสอบระบบ',
+        orgName: 'ผจฟ.1 กปบ.(ก3)',
+        status: 'APPROVED'
+      };
+      await dispatchExternalNotification('ทดสอบการเชื่อมต่อแจ้งเตือน (Test Alert)', samplePermit, 'ทดสอบจากหน้า User Admin');
+      showToast('ส่งคำสั่งทดสอบไปยัง Webhook ปลายทางแล้ว กรุณาตรวจสอบข้อความในแอปปลายทาง', 'success');
     }
 
     // =========================================================================
@@ -1918,16 +2104,13 @@
       localStorage.removeItem(STORAGE_KEYS.PLANS);
       localStorage.removeItem(STORAGE_KEYS.OVERRIDES);
       localStorage.removeItem(STORAGE_KEYS.NOTIF_READ);
+      localStorage.removeItem(STORAGE_KEYS.SESSION_USER_ID);
       location.reload();
     }
 
     // =========================================================================
     // 1.5 ระบบแจ้งเตือนในหน้าเว็บ (Notification Center ตามสิทธิ์ผู้ใช้งาน)
     // =========================================================================
-    // กฎการกรองแจ้งเตือน:
-    // - ผู้ขออนุญาต (requester) / พนักงานสถานี (station_staff): แจ้งเตือนเฉพาะใบคำขอของตนที่อนุมัติแล้ว (APPROVED)
-    // - ผู้ตรวจสอบ (verifier) / admin: แจ้งเตือนทุกกระบวนการ (รอตรวจ, ผ่านตรวจ/รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)
-    // - ผู้อนุมัติ (approver): แจ้งเตือนเฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ (VERIFIED_PENDING_APPROVER)
     function getReadNotificationIdsForUser(userId) {
       try {
         const allMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIF_READ) || '{}');
@@ -1986,7 +2169,6 @@
 
         // 2) ผู้ตรวจสอบ (และ Admin): แจ้งเตือนทุกกระบวนการ (รอตรวจ, ผ่านตรวจ/รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)
         else if (role === 'verifier' || role === 'admin') {
-          // 2.1 สถานะกระบวนการของใบงาน
           let stageKey = p.status;
           let badgeText = '';
           let badgeClass = '';
@@ -2043,7 +2225,6 @@
             isUnread: !readSet.has(mainNotifId)
           });
 
-          // 2.2 แจ้งเตือนกระบวนการรายงานผลปิดงาน (ถ้ามี)
           if (p.workReport) {
             const repNotifId = `${p.id}::REPORTED_${p.workReport.reportedAt}`;
             items.push({
@@ -2219,7 +2400,6 @@
       }
     }
 
-    // ปิด Dropdown แจ้งเตือนเมื่อคลิกพื้นที่อื่นนอกกรอบ
     document.addEventListener('click', (e) => {
       const wrapper = document.getElementById('notif-wrapper');
       const dd = document.getElementById('notif-dropdown');
@@ -2325,7 +2505,165 @@
     ];
 
     // =========================================================================
-    // 3. ระบบเข้าสู่ระบบ สมัครสมาชิก และสิทธิ์การเข้าถึง (Auth & RBAC)
+    // 2.5 Smart Feature ข้อ 2: Clone Permit & Supervisor Directory Auto-Fill
+    // =========================================================================
+    function refreshSmartFormHelpers() {
+      const cloneSel = document.getElementById('clone-permit-selector');
+      if (cloneSel) {
+        const curVal = cloneSel.value;
+        cloneSel.innerHTML = `<option value="">-- เลือกใบงานเดิมที่ต้องการคัดลอก (${permits.length} ฉบับ) --</option>` +
+          permits.map(p => `<option value="${p.id}">${p.permitNo} • สฟ.${p.station} — ${p.workTitle}</option>`).join('');
+        if (curVal) cloneSel.value = curVal;
+      }
+
+      // สร้างฐานข้อมูลผู้ควบคุมงานและงานที่เคยทำจาก permits ทั้งหมด
+      const supMap = {};
+      const titleSet = new Set();
+      const equipSet = new Set();
+
+      permits.forEach(p => {
+        if (p.workTitle) titleSet.add(p.workTitle.trim());
+        if (p.equipment) equipSet.add(p.equipment.trim());
+        if (p.supervisorName) {
+          supMap[p.supervisorName.trim()] = {
+            name: p.supervisorName.trim(),
+            orgType: p.orgType || 'กฟภ.',
+            orgName: p.orgName || '',
+            position: p.supervisorPosition || '',
+            phone: p.supervisorPhone || ''
+          };
+        }
+      });
+
+      const supListEl = document.getElementById('supervisor-directory-list');
+      if (supListEl) {
+        supListEl.innerHTML = Object.values(supMap).map(s =>
+          `<option value="${s.name}">${s.orgName} • ${s.position} (${s.phone})</option>`
+        ).join('');
+      }
+
+      const titleListEl = document.getElementById('work-title-datalist');
+      if (titleListEl) {
+        titleListEl.innerHTML = Array.from(titleSet).map(t => `<option value="${t}"></option>`).join('');
+      }
+
+      const equipListEl = document.getElementById('equipment-datalist');
+      if (equipListEl) {
+        equipListEl.innerHTML = Array.from(equipSet).map(e => `<option value="${e}"></option>`).join('');
+      }
+    }
+
+    function onSupervisorNameAutoFill() {
+      const typedName = (document.getElementById('supervisorName')?.value || '').trim();
+      if (!typedName) return;
+      const matched = permits.find(p => p.supervisorName && p.supervisorName.trim() === typedName);
+      if (!matched) return;
+
+      const orgRadio = document.querySelector(`input[name="orgType"][value="${matched.orgType || 'กฟภ.'}"]`);
+      if (orgRadio) {
+        orgRadio.checked = true;
+        toggleExternalOrg();
+      }
+      if (matched.orgName) document.getElementById('orgName').value = matched.orgName;
+      if (matched.supervisorPosition) document.getElementById('supervisorPosition').value = matched.supervisorPosition;
+      if (matched.supervisorPhone) document.getElementById('supervisorPhone').value = matched.supervisorPhone;
+    }
+
+    function cloneSelectedPermitToForm() {
+      const id = document.getElementById('clone-permit-selector')?.value;
+      if (!id) {
+        showToast('กรุณาเลือกใบงานเดิมที่ต้องการคัดลอกก่อนครับ', 'warning');
+        return;
+      }
+      const p = permits.find(item => item.id === id);
+      if (!p) return;
+
+      // ใช้วันที่ปัจจุบันเป็นค่าเริ่มต้น แต่ดึงเวลาเดิมมาให้
+      const now = getCurrentThaiDateTime();
+      document.getElementById('startDate').value = now.isoDate;
+      document.getElementById('endDate').value = now.isoDate;
+
+      const [sH, sM] = to24HourTime(p.startTime).split(':');
+      const [eH, eM] = to24HourTime(p.endTime).split(':');
+      if (document.getElementById('startHour')) document.getElementById('startHour').value = sH || '08';
+      if (document.getElementById('startMinute')) document.getElementById('startMinute').value = sM || '30';
+      if (document.getElementById('endHour')) document.getElementById('endHour').value = eH || '16';
+      if (document.getElementById('endMinute')) document.getElementById('endMinute').value = eM || '00';
+      syncTime24hInputs(false);
+
+      document.getElementById('stationSelect').value = p.station || '';
+      onStationChange();
+
+      document.getElementById('isScadaBuilding').checked = !!p.isScadaBuilding;
+      const staffRadio = document.querySelector(`input[name="staffArrange"][value="${p.staffArrange || 'จัดพนักงาน'}"]`);
+      if (staffRadio) staffRadio.checked = true;
+
+      const outageRadio = document.querySelector(`input[name="outageMode"][value="${p.outageMode || 'ไม่ดับไฟทำงาน'}"]`);
+      if (outageRadio) outageRadio.checked = true;
+
+      const catRadio = document.querySelector(`input[name="workCategory"][value="${p.workCategory || 'งานตามแผน'}"]`);
+      if (catRadio) catRadio.checked = true;
+
+      document.getElementById('workTitle').value = p.workTitle || '';
+      document.getElementById('equipment').value = p.equipment || '';
+
+      const orgRadio = document.querySelector(`input[name="orgType"][value="${p.orgType || 'กฟภ.'}"]`);
+      if (orgRadio) {
+        orgRadio.checked = true;
+        toggleExternalOrg();
+      }
+      document.getElementById('orgName').value = p.orgName || '';
+      document.getElementById('supervisorName').value = p.supervisorName || '';
+      document.getElementById('supervisorPosition').value = p.supervisorPosition || '';
+      document.getElementById('supervisorPhone').value = p.supervisorPhone || '';
+      document.getElementById('peaSupervisorName').value = p.peaSupervisorName || '';
+      document.getElementById('peaSupervisorPhone').value = p.peaSupervisorPhone || '';
+
+      document.getElementById('workersTotal').value = p.workersTotal || 3;
+      document.getElementById('workersMale').value = p.workersMale || 3;
+      document.getElementById('workersFemale').value = p.workersFemale || 0;
+      document.getElementById('workersForeign').value = p.workersForeign || 0;
+
+      document.querySelectorAll('input[name="hazard"]').forEach(el => {
+        el.checked = Array.isArray(p.hazards) && p.hazards.includes(el.value);
+      });
+      document.querySelectorAll('input[name="docItem"]').forEach(el => {
+        el.checked = Array.isArray(p.docs) && p.docs.includes(el.value);
+      });
+      document.querySelectorAll('input[data-doc-no]').forEach(el => {
+        el.value = (p.docNumbers && p.docNumbers[el.dataset.docNo]) ? p.docNumbers[el.dataset.docNo] : '';
+      });
+      document.querySelectorAll('input[name="condition"]').forEach(el => {
+        el.checked = Array.isArray(p.conditions) && p.conditions.includes(el.value);
+      });
+      document.getElementById('extraConditionText').value = p.extraConditionText || '';
+      document.querySelectorAll('input[name="ppe"]').forEach(el => {
+        el.checked = Array.isArray(p.ppe) && p.ppe.includes(el.value);
+      });
+
+      runLiveCheck();
+      showToast(`คัดลอกข้อมูลจาก ${p.permitNo} (สฟ.${p.station}) เรียบร้อย! กรุณาตรวจสอบวัน-เวลาและกดยื่นคำขอ`, 'success');
+    }
+
+    function resetRequestFormClean() {
+      document.getElementById('wp-form').reset();
+      const now = getCurrentThaiDateTime();
+      document.getElementById('startDate').value = now.isoDate;
+      document.getElementById('endDate').value = now.isoDate;
+      init24HourTimeSelectors();
+      if (currentUser) {
+        document.getElementById('requesterFullName').value = `${currentUser.firstName} ${currentUser.lastName}`;
+        document.getElementById('requesterDept').value = currentUser.department || '-';
+        document.getElementById('requesterPhone').value = currentUser.phone || '-';
+      }
+      pendingRefAttachments = [];
+      renderPendingRefFilesPreview();
+      onStationChange();
+      showToast('ล้างแบบฟอร์มเรียบร้อยแล้ว', 'info');
+    }
+
+    // =========================================================================
+    // 3. ระบบเข้าสู่ระบบ สมัครสมาชิก และสิทธิ์การเข้าถึง (Auth & Auto-Resume Session)
     // =========================================================================
     function switchAuthMode(mode) {
       const loginForm = document.getElementById('login-form');
@@ -2408,6 +2746,19 @@
       updatePendingUsersBadge();
     }
 
+    function enterAuthenticatedApp(user, silent = false) {
+      currentUser = user;
+      localStorage.setItem(STORAGE_KEYS.SESSION_USER_ID, user.id);
+      document.getElementById('auth-gate-screen').classList.add('hidden');
+      document.getElementById('main-app-shell').classList.remove('hidden');
+      document.getElementById('main-app-shell').classList.add('flex');
+
+      applyCurrentUserProfileToSystem();
+      if (!silent) {
+        showToast(`ยินดีต้อนรับ ${user.firstName} ${user.lastName} (${user.department})`, 'success');
+      }
+    }
+
     function handleLoginSubmit(e) {
       e.preventDefault();
       const username = document.getElementById('login-username').value.trim();
@@ -2430,17 +2781,12 @@
         return;
       }
 
-      currentUser = user;
-      document.getElementById('auth-gate-screen').classList.add('hidden');
-      document.getElementById('main-app-shell').classList.remove('hidden');
-      document.getElementById('main-app-shell').classList.add('flex');
-
-      applyCurrentUserProfileToSystem();
-      showToast(`ยินดีต้อนรับ ${user.firstName} ${user.lastName} (${user.department})`, 'success');
+      enterAuthenticatedApp(user, false);
     }
 
     function logoutUser() {
       currentUser = null;
+      localStorage.removeItem(STORAGE_KEYS.SESSION_USER_ID);
       closeNotificationDropdown();
       document.getElementById('main-app-shell').classList.add('hidden');
       document.getElementById('main-app-shell').classList.remove('flex');
@@ -2472,6 +2818,7 @@
         else btn.classList.add('hidden');
       });
 
+      refreshSmartFormHelpers();
       updateCounters();
       updatePendingUsersBadge();
       renderNotifications();
@@ -3100,6 +3447,7 @@
       renderPendingRefFilesPreview();
 
       saveAllToLocalStorage();
+      refreshSmartFormHelpers();
       updateCounters();
       renderNotifications();
       renderVerifierQueue();
@@ -3108,6 +3456,12 @@
       renderDocCardsList(newPermit.id);
       renderPermitDocument();
       renderScheduleOverrides();
+
+      dispatchExternalNotification(
+        autoSign ? 'ยื่นคำขอใหม่ (ผ่านตรวจอัตโนมัติ -> รอ กปบ.(ก3) อนุมัติ)' : 'ยื่นคำขอใหม่ (รอผู้ตรวจสอบ ผจฟ.1)',
+        newPermit,
+        internalVerifierNote
+      );
 
       document.getElementById('override-conflict-chk').checked = false;
       document.getElementById('overlapReason').value = '';
@@ -3275,6 +3629,7 @@
       renderStatusTracker();
       renderDocCardsList(p.id);
       renderPermitDocument();
+      dispatchExternalNotification(`ผ่านผู้ตรวจสอบ (${signerName}) -> รอ กปบ.(ก3) อนุมัติ`, p, p.verifierAdditionalNotes);
       showToast(`ลงนามผู้ตรวจสอบ (${signerName}) เรียบร้อย! ส่งต่อไปยังผู้อนุมัติ กปบ.(ก3) แล้ว`, 'success');
     }
 
@@ -3299,6 +3654,7 @@
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
+      dispatchExternalNotification(`ตีกลับคำขอโดยผู้ตรวจสอบ (${signerName})`, p, p.verifierAdditionalNotes);
       showToast(`ตีกลับใบคำขอ ${p.permitNo} เรียบร้อยแล้ว`, 'warning');
     }
 
@@ -3408,6 +3764,7 @@
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
+      dispatchExternalNotification(`ไม่อนุมัติ / ส่งกลับโดย กปบ.(ก3) (${signerName})`, p);
       showToast(`ไม่อนุมัติใบคำขอ ${p.permitNo} และส่งแจ้งเตือนกลับแล้ว`, 'warning');
     }
 
@@ -3454,6 +3811,7 @@
       renderStatusTracker();
       renderDocCardsList(p.id);
       renderPermitDocument();
+      dispatchExternalNotification(`อนุมัติใบอนุญาตทำงานแล้ว โดย ${approverFullName}`, p, 'พร้อมเข้าปฏิบัติงานตามกำหนดการ');
       showToast(`อนุมัติ ${p.permitNo} สำเร็จ! พร้อมดาวน์โหลดหรืออัปโหลด PDF รวมเอกสารแนบขึ้น Google Drive`, 'success');
       switchTab('status');
     }
@@ -4029,6 +4387,7 @@
       renderDocCardsList(p.id);
       renderPermitDocument();
       renderStatusTracker();
+      dispatchExternalNotification(`รายงานผลปิดงาน (${reporterName})`, p, closeState);
       showToast(`บันทึกรายงานผลการปฏิบัติงานของ ${p.permitNo} เรียบร้อยแล้ว`, 'success');
     }
 
@@ -4745,6 +5104,20 @@
       if (clientInput) clientInput.value = localStorage.getItem(STORAGE_KEYS.GDRIVE_CLIENT) || '';
       const gsheetInput = document.getElementById('adm-gsheet-webapp-url');
       if (gsheetInput) gsheetInput.value = getGoogleSheetWebAppUrl();
+
+      // โหลดค่าตั้งค่า Webhook แจ้งเตือน
+      const whCfg = getWebhookConfig();
+      const whTypeEl = document.getElementById('adm-webhook-type');
+      const whUrlEl = document.getElementById('adm-webhook-url');
+      const whTargetEl = document.getElementById('adm-webhook-target');
+      const whEnabledEl = document.getElementById('adm-webhook-enabled');
+      const whLogEl = document.getElementById('adm-webhook-last-log');
+      if (whTypeEl) whTypeEl.value = whCfg.type || 'GAS_RELAY';
+      if (whUrlEl) whUrlEl.value = whCfg.url || '';
+      if (whTargetEl) whTargetEl.value = whCfg.targetId || '';
+      if (whEnabledEl) whEnabledEl.checked = !!whCfg.enabled;
+      if (whLogEl && whCfg.lastStatus) whLogEl.textContent = whCfg.lastStatus;
+
       renderAdminUsersTable();
       renderAdminPermitsList();
       if (window.lucide) lucide.createIcons();
@@ -4945,6 +5318,7 @@
       if (idx === -1) return;
       const removed = permits.splice(idx, 1)[0];
       saveAllToLocalStorage();
+      refreshSmartFormHelpers();
       updateCounters();
       renderNotifications();
       renderAdminPermitsList();
@@ -4956,7 +5330,7 @@
     }
 
     // =========================================================================
-    // 13. ฟังก์ชันช่วยเหลือ & เริ่มต้นระบบ (Initialization)
+    // 13. ฟังก์ชันช่วยเหลือ & เริ่มต้นระบบ (Initialization + Auto-Resume Session)
     // =========================================================================
     function formatThaiDate(isoStr) {
       if (!isoStr) return '-';
@@ -5104,6 +5478,7 @@
 
       init24HourTimeSelectors();
       buildCheckboxes();
+      refreshSmartFormHelpers();
       renderStationTable();
       renderNextMonthPlans();
 
@@ -5114,6 +5489,18 @@
 
       updateCounters();
       updatePendingUsersBadge();
+
+      // Smart Feature ข้อ 3: กู้คืน Session การล็อกอินอัตโนมัติ (Auto-Resume Session)
+      const savedSessionUserId = localStorage.getItem(STORAGE_KEYS.SESSION_USER_ID);
+      if (savedSessionUserId) {
+        const restoredUser = usersDb.find(u => u.id === savedSessionUserId && u.status === 'ACTIVE');
+        if (restoredUser) {
+          enterAuthenticatedApp(restoredUser, true);
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.SESSION_USER_ID);
+        }
+      }
+
       if (window.lucide) lucide.createIcons();
 
       if (getGoogleSheetWebAppUrl()) {
