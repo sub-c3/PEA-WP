@@ -40,9 +40,19 @@
     }
   </script>
   <style>
+    html {
+      scroll-behavior: auto;
+      overflow-y: scroll;
+    }
     body {
       font-family: 'Prompt', sans-serif;
       background-color: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+    }
+    header.sticky {
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      will-change: transform;
     }
     .doc-paper {
       font-family: 'Sarabun', sans-serif;
@@ -311,6 +321,69 @@
   </div>
 
 
+
+  <!-- ======================================================================= -->
+  <!-- MODAL แก้ไขข้อมูลส่วนตัว (สำหรับอัปเดตตำแหน่ง / โยกย้ายสังกัด / เบอร์โทร / รหัสผ่าน) -->
+  <!-- ======================================================================= -->
+  <div id="profile-modal" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl shadow-2xl border border-purple-200 max-w-lg w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-pea-dark to-pea-purple text-white px-5 py-4 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-base flex items-center gap-2">
+            <i data-lucide="user-pen" class="w-5 h-5 text-amber-300"></i>
+            <span>แก้ไขข้อมูลส่วนตัว (ตำแหน่ง / สังกัด / เบอร์โทร)</span>
+          </h3>
+          <p id="profile-modal-username-label" class="text-xs text-purple-200 mt-0.5">บัญชีผู้ใช้: -</p>
+        </div>
+        <button type="button" onclick="closeProfileModal()" class="p-1.5 rounded-lg hover:bg-white/20 text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="saveMyProfileChanges(event)" class="p-5 space-y-3.5 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ <span class="text-rose-500">*</span></label>
+            <input type="text" id="prof-firstname" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">นามสกุล <span class="text-rose-500">*</span></label>
+            <input type="text" id="prof-lastname" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่ง <span class="text-rose-500">*</span></label>
+            <input type="text" id="prof-position" required placeholder="เช่น วศก.7 / พชง.5 / หผ...." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยงาน / สังกัด <span class="text-rose-500">*</span></label>
+            <input type="text" id="prof-department" required placeholder="เช่น ผบษ.(ก3)" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ <span class="text-rose-500">*</span></label>
+            <input type="tel" id="prof-phone" required placeholder="เช่น 081-2345678" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">เปลี่ยนรหัสผ่านใหม่ (เว้นว่างหากไม่เปลี่ยน)</label>
+            <input type="password" id="prof-new-password" minlength="4" placeholder="ตั้งรหัสผ่านใหม่อย่างน้อย 4 ตัว" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+          </div>
+        </div>
+        <div class="bg-purple-50 border border-purple-200 rounded-xl p-2.5 text-[11px] text-pea-dark">
+          * เมื่อบันทึกแล้ว ระบบจะอัปเดตตำแหน่งและสังกัดใหม่ขึ้น Google Sheets ทันที และดึงไปเติมอัตโนมัติในใบคำขออนุญาตฉบับถัดไป
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeProfileModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-semibold">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-pea-purple to-pea-dark hover:from-pea-dark hover:to-pea-purple text-white text-xs sm:text-sm font-bold shadow flex items-center gap-1.5">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>บันทึกข้อมูลส่วนตัว</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ======================================================================= -->
   <!-- MODAL หลักเกณฑ์การอนุญาตเข้าปฏิบัติงานภายในสถานีไฟฟ้า ปี 2569 -->
   <!-- ======================================================================= -->
@@ -463,7 +536,13 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">
+                ตำแหน่ง <span class="text-rose-500">*</span>
+              </label>
+              <input type="text" id="reg-position" required placeholder="เช่น วศก.7 / พชง.5" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+            </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">
                 หน่วยงาน / สังกัด <span class="text-rose-500">*</span>
@@ -602,6 +681,12 @@
             </div>
           </div>
         </div>
+
+        <!-- ปุ่มแก้ไขข้อมูลส่วนตัว (ตำแหน่ง / สังกัด / เบอร์โทร) -->
+        <button type="button" onclick="openProfileModal()" class="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-xs transition flex items-center gap-1.5" title="แก้ไขข้อมูลส่วนตัว ตำแหน่ง สังกัด หรือเบอร์โทรศัพท์">
+          <i data-lucide="user-pen" class="w-3.5 h-3.5 text-sky-200"></i>
+          <span class="hidden sm:inline">ข้อมูลส่วนตัว</span>
+        </button>
 
         <!-- ปุ่มจัดการลายเซ็นอิเล็กทรอนิกส์ส่วนตัว -->
         <button type="button" onclick="openSignatureModal()" class="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-xs transition flex items-center gap-1.5" title="ตั้งค่าลายเซ็นอิเล็กทรอนิกส์ (วาดหรืออัปโหลด .PNG)">
@@ -1830,6 +1915,10 @@
             <input type="text" id="adm-new-last" required placeholder="นามสกุล" class="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs bg-white">
           </div>
           <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">ตำแหน่ง</label>
+            <input type="text" id="adm-new-position" placeholder="เช่น วศก.7" class="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs bg-white">
+          </div>
+          <div>
             <label class="block text-[11px] font-semibold text-slate-600 mb-1">หน่วยงาน</label>
             <input type="text" id="adm-new-dept" required placeholder="เช่น ผปค.กสฟ.(ก3)" class="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs bg-white">
           </div>
@@ -1867,6 +1956,7 @@
             <thead>
               <tr class="bg-purple-50 text-pea-dark border-b border-purple-200">
                 <th class="p-3 font-bold">ชื่อ - นามสกุล</th>
+                <th class="p-3 font-bold">ตำแหน่ง</th>
                 <th class="p-3 font-bold">หน่วยงาน</th>
                 <th class="p-3 font-bold">เบอร์โทรศัพท์</th>
                 <th class="p-3 font-bold">Username</th>
@@ -1946,10 +2036,11 @@
       // เมื่อตั้งค่า GAS_WEB_APP_URL แล้ว ระบบจะบันทึกและอัปเดตออนไลน์ตรงไปยัง Google Sheets + Drive เป็นหลัก
       ONLINE_ONLY_MODE: true,
       // ดึงข้อมูลอัปเดตจาก Google Sheets อัตโนมัติทุกกี่วินาที
-      AUTO_POLL_SECONDS: 30
+      AUTO_POLL_SECONDS: 60
     };
     let cloudPollTimer = null;
     let isCloudSyncing = false;
+    let lastCloudSignature = '';
 
     const STORAGE_KEYS = {
       USERS: 'pea_wp_prod_users_v1',
@@ -2051,7 +2142,7 @@
       const dot = document.getElementById('top-cloud-dot');
       const lbl = document.getElementById('top-cloud-label');
       const btn = document.getElementById('top-cloud-sync-btn');
-      if (dot) dot.className = connected ? 'w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse' : 'w-2 h-2 rounded-full bg-amber-300 inline-block';
+      if (dot) dot.className = connected ? 'w-2 h-2 rounded-full bg-emerald-400 inline-block' : 'w-2 h-2 rounded-full bg-amber-300 inline-block';
       if (lbl) lbl.textContent = labelText || (connected ? 'ออนไลน์ (Sheets+Drive)' : 'รอตั้งค่า Cloud');
       if (btn) btn.className = connected
         ? 'px-2.5 py-1.5 rounded-xl bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-100 font-semibold text-xs border border-emerald-300/50 transition flex items-center gap-1.5'
@@ -2067,11 +2158,33 @@
       await syncPullFromGoogleSheet(true);
     }
 
+    function computeCloudSignature() {
+      try {
+        return JSON.stringify({
+          p: permits.map(x => [x.id, x.status, x.permitNo, x.verifierSigned, x.approverSigned, x.workReport ? x.workReport.reportedAt : '', x.driveStorage ? x.driveStorage.fileId : '']),
+          u: usersDb.map(x => [x.id, x.firstName, x.lastName, x.position || '', x.department || '', x.phone || '', x.role, x.status, (x.signatureDataUrl || '').length]),
+          s: yearSequenceCounters,
+          o: scheduleOverrides.length,
+          pl: nextMonthPlans.length,
+          ap: activePlanLabel
+        });
+      } catch (_) {
+        return String(Date.now());
+      }
+    }
+
+    function isUserActivelyEditingForm() {
+      const ae = document.activeElement;
+      if (!ae) return false;
+      const tag = (ae.tagName || '').toUpperCase();
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    }
+
     function startCloudAutoSync() {
       if (cloudPollTimer) clearInterval(cloudPollTimer);
       if (!isOnlineCloudConfigured() || !CLOUD_CONFIG.AUTO_POLL_SECONDS) return;
       cloudPollTimer = setInterval(() => {
-        if (!document.hidden && !isCloudSyncing) {
+        if (!document.hidden && !isCloudSyncing && !isUserActivelyEditingForm()) {
           syncPullFromGoogleSheet(false);
         }
       }, CLOUD_CONFIG.AUTO_POLL_SECONDS * 1000);
@@ -2136,7 +2249,8 @@
 
     async function syncPushToGoogleSheet(notifyUser = false) {
       const url = getGoogleSheetWebAppUrl();
-      if (!url) return;
+      if (!url) return false;
+      isCloudSyncing = true;
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -2156,14 +2270,20 @@
         });
         const data = await res.json();
         if (data && data.success) {
+          lastCloudSignature = computeCloudSignature();
           const now = getCurrentThaiDateTime();
           updateGoogleSheetBadge(`เชื่อมต่อ Google Sheet แล้ว (อัปเดตล่าสุด ${now.fullDateTime})`, true);
           if (notifyUser) showToast('บันทึกข้อมูลทั้งหมดขึ้น Google Sheet สำเร็จ!', 'success');
+          return true;
         }
+        return false;
       } catch (err) {
         console.warn('Google Sheet sync push warning:', err);
         updateGoogleSheetBadge('เชื่อมต่อ Google Sheet ไม่สำเร็จ (ตรวจสอบสิทธิ์ Web App)', false);
         if (notifyUser) showToast('ไม่สามารถเชื่อมต่อ Google Sheet URL ได้ กรุณาตรวจสอบการ Deploy แบบ Anyone', 'error');
+        return false;
+      } finally {
+        isCloudSyncing = false;
       }
     }
 
@@ -2173,6 +2293,8 @@
         if (notifyUser) showToast('ยังไม่ได้ตั้งค่า Google Sheet Web App URL ในแท็บ 7', 'warning');
         return;
       }
+      if (isCloudSyncing) return;
+      isCloudSyncing = true;
       try {
         const res = await fetch(`${url}?action=getAll`);
         const data = await res.json();
@@ -2190,27 +2312,49 @@
             data.stations.forEach(s => STATIONS_MASTER.push(s));
           }
           const m = data.meta || data.logs || {};
-          if (m.yearSequenceCounters) yearSequenceCounters = m.yearSequenceCounters;
+          if (m.yearSequenceCounters && typeof m.yearSequenceCounters === 'object') {
+            const normalizedSeq = {};
+            Object.keys(m.yearSequenceCounters).forEach(k => {
+              const n = parseInt(m.yearSequenceCounters[k], 10);
+              if (!isNaN(n)) normalizedSeq[String(k)] = n;
+            });
+            if (Object.keys(normalizedSeq).length > 0) yearSequenceCounters = normalizedSeq;
+          }
           if (Array.isArray(m.scheduleOverrides)) scheduleOverrides = m.scheduleOverrides;
           if (Array.isArray(m.nextMonthPlans) && m.nextMonthPlans.length > 0) nextMonthPlans = m.nextMonthPlans;
           if (m.activePlanLabel) activePlanLabel = m.activePlanLabel;
-          saveAllToLocalStorage(true);
-          populateStationDropdowns();
-          refreshSmartFormHelpers();
-          renderStationTable();
-          updateCounters();
-          updatePendingUsersBadge();
-          if (currentUser) {
-            applyCurrentUserProfileToSystem();
-            renderNotifications();
-          }
+
+          const newSig = computeCloudSignature();
+          const hasChanged = (newSig !== lastCloudSignature);
+          lastCloudSignature = newSig;
+
           const now = getCurrentThaiDateTime();
           updateGoogleSheetBadge(`เชื่อมต่อ Google Sheet แล้ว (ดึงข้อมูลล่าสุด ${now.fullDateTime})`, true);
+
+          // อัปเดต DOM เฉพาะเมื่อข้อมูลเปลี่ยนจริง หรือผู้ใช้กดซิงก์เอง เพื่อป้องกันหน้าจอกะพริบขณะเลื่อน
+          if (hasChanged || notifyUser) {
+            saveAllToLocalStorage(true);
+            refreshPermitNumberPreview();
+            syncAdminSequenceInputs();
+            updateCounters();
+            updatePendingUsersBadge();
+            refreshSmartFormHelpers();
+            if (currentUser) {
+              const latestMe = usersDb.find(u => u.id === currentUser.id);
+              if (latestMe) currentUser = latestMe;
+              renderNotifications();
+              renderVerifierQueue();
+              renderApproverQueue();
+              renderStatusTracker();
+            }
+          }
           if (notifyUser) showToast('ดึงข้อมูลล่าสุดจาก Google Sheet เรียบร้อยแล้ว!', 'success');
         }
       } catch (err) {
         console.warn('Google Sheet sync pull warning:', err);
         if (notifyUser) showToast('ไม่สามารถดึงข้อมูลจาก Google Sheet ได้', 'error');
+      } finally {
+        isCloudSyncing = false;
       }
     }
 
@@ -2343,6 +2487,7 @@
         id: 'USR-ADMIN',
         firstName: 'ผู้ดูแลระบบ',
         lastName: 'ผจฟ.1',
+        position: 'ผู้ดูแลระบบ ผจฟ.1',
         department: 'ผจฟ.1 กปบ.(ก3)',
         phone: '081-0194409',
         username: 'admin',
@@ -2356,6 +2501,7 @@
         id: 'USR-PEERAWIT',
         firstName: 'พีรวิชญ์',
         lastName: 'ศรีนันทวงศ์',
+        position: 'ชผ.จฟ.1 กปบ.(ก3)',
         department: 'ชผ.จฟ.1 กปบ.(ก3)',
         phone: '081-0194409',
         username: 'peerawit',
@@ -2369,6 +2515,7 @@
         id: 'USR-PANUPONG',
         firstName: 'ภานุพงศ์',
         lastName: 'เจนสุริยะกุล',
+        position: 'หผ.จฟ.1 กปบ.(ก3)',
         department: 'หผ.จฟ.1 กปบ.(ก3)',
         phone: '081-9425618',
         username: 'panupong',
@@ -2382,6 +2529,7 @@
         id: 'USR-SUPACHOK',
         firstName: 'ศุภโชค',
         lastName: 'นาคราช',
+        position: 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)',
         department: 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)',
         phone: '089-2005699',
         username: 'supachok',
@@ -2395,6 +2543,7 @@
         id: 'USR-DISPATCH-01',
         firstName: 'หัวหน้ากะ',
         lastName: 'ศูนย์ควบคุมการจ่ายไฟ (ก3)',
+        position: 'หัวหน้ากะ ศูนย์ควบคุมการจ่ายไฟเขต (ก3)',
         department: 'หัวหน้ากะ ศูนย์ควบคุมการจ่ายไฟเขต (ก3)',
         phone: '034-243099',
         username: 'dispatch',
@@ -2408,6 +2557,7 @@
         id: 'USR-STATION-01',
         firstName: 'พนักงานเวรประจำสถานี',
         lastName: 'ผจฟ.1',
+        position: 'พชง.ประจำสถานีไฟฟ้า',
         department: 'พนักงานสถานีไฟฟ้า ผจฟ.1 กปบ.(ก3)',
         phone: '034-243000',
         username: 'station',
@@ -3540,9 +3690,7 @@
       document.getElementById('peaGff').value = 'กฟก.3';
       init24HourTimeSelectors();
       if (currentUser) {
-        document.getElementById('requesterFullName').value = `${currentUser.firstName} ${currentUser.lastName}`;
-        document.getElementById('requesterDept').value = currentUser.department || '-';
-        document.getElementById('requesterPhone').value = currentUser.phone || '-';
+        refreshCurrentUserHeaderAndRequestFields();
       }
       const wBody = document.getElementById('workers-table-body');
       if (wBody) { wBody.innerHTML = ''; addWorkerRow(); }
@@ -3598,6 +3746,7 @@
       e.preventDefault();
       const firstName = document.getElementById('reg-firstname').value.trim();
       const lastName = document.getElementById('reg-lastname').value.trim();
+      const position = (document.getElementById('reg-position')?.value || '').trim();
       const department = document.getElementById('reg-department').value.trim();
       const phone = document.getElementById('reg-phone').value.trim();
       const username = document.getElementById('reg-username').value.trim();
@@ -3619,6 +3768,7 @@
         id: 'USR-' + Date.now(),
         firstName,
         lastName,
+        position,
         department,
         phone,
         username,
@@ -3690,18 +3840,87 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function applyCurrentUserProfileToSystem() {
+    function refreshCurrentUserHeaderAndRequestFields() {
       if (!currentUser) return;
       const fullName = `${currentUser.firstName} ${currentUser.lastName}`;
-      document.getElementById('current-user-fullname').textContent = `${fullName} (${currentUser.department})`;
-      document.getElementById('current-user-role-dept').textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
+      const posText = currentUser.position ? ` • ${currentUser.position}` : '';
+      const fnEl = document.getElementById('current-user-fullname');
+      const rdEl = document.getElementById('current-user-role-dept');
+      if (fnEl) fnEl.textContent = `${fullName}${posText} (${currentUser.department})`;
+      if (rdEl) rdEl.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
 
       const reqNameEl = document.getElementById('requesterFullName');
+      const reqPosEl = document.getElementById('requesterPosition');
       const reqDeptEl = document.getElementById('requesterDept');
       const reqPhoneEl = document.getElementById('requesterPhone');
       if (reqNameEl) reqNameEl.value = fullName;
+      if (reqPosEl) reqPosEl.value = currentUser.position || '';
       if (reqDeptEl) reqDeptEl.value = currentUser.department || '-';
       if (reqPhoneEl) reqPhoneEl.value = currentUser.phone || '-';
+    }
+
+    function openProfileModal() {
+      if (!currentUser) return;
+      const modal = document.getElementById('profile-modal');
+      if (!modal) return;
+      document.getElementById('profile-modal-username-label').textContent = `บัญชีผู้ใช้: ${currentUser.username} (${ROLE_LABELS[currentUser.role] || currentUser.role})`;
+      document.getElementById('prof-firstname').value = currentUser.firstName || '';
+      document.getElementById('prof-lastname').value = currentUser.lastName || '';
+      document.getElementById('prof-position').value = currentUser.position || '';
+      document.getElementById('prof-department').value = currentUser.department || '';
+      document.getElementById('prof-phone').value = currentUser.phone || '';
+      document.getElementById('prof-new-password').value = '';
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeProfileModal() {
+      const modal = document.getElementById('profile-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveMyProfileChanges(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+      const firstName = document.getElementById('prof-firstname').value.trim();
+      const lastName = document.getElementById('prof-lastname').value.trim();
+      const position = document.getElementById('prof-position').value.trim();
+      const department = document.getElementById('prof-department').value.trim();
+      const phone = document.getElementById('prof-phone').value.trim();
+      const newPassword = document.getElementById('prof-new-password').value;
+
+      currentUser.firstName = firstName;
+      currentUser.lastName = lastName;
+      currentUser.position = position;
+      currentUser.department = department;
+      currentUser.phone = phone;
+      if (newPassword && newPassword.length >= 4) {
+        currentUser.password = newPassword;
+      }
+
+      const idx = usersDb.findIndex(u => u.id === currentUser.id);
+      if (idx !== -1) {
+        usersDb[idx] = { ...usersDb[idx], ...currentUser };
+      }
+
+      refreshCurrentUserHeaderAndRequestFields();
+      if (currentUser.role === 'admin') renderAdminUsersTable();
+      closeProfileModal();
+
+      if (isOnlineCloudConfigured()) {
+        showToast('กำลังบันทึกข้อมูลส่วนตัวขึ้น Google Sheets...', 'info');
+        const ok = await syncPushToGoogleSheet(false);
+        if (ok) showToast(`อัปเดตข้อมูลส่วนตัว (${firstName} ${lastName} • ${position}) สำเร็จแล้ว!`, 'success');
+        else showToast('อัปเดตข้อมูลบนหน้าจอแล้ว แต่ซิงก์ขึ้น Google Sheets ไม่สำเร็จ', 'warning');
+      } else {
+        saveAllToLocalStorage(true);
+        showToast(`อัปเดตข้อมูลส่วนตัว (${firstName} ${lastName} • ${position}) เรียบร้อยแล้ว`, 'success');
+      }
+    }
+
+    function applyCurrentUserProfileToSystem() {
+      if (!currentUser) return;
+      refreshCurrentUserHeaderAndRequestFields();
 
       const allowedTabs = ROLE_ALLOWED_TABS[currentUser.role] || ['dashboard', 'request', 'status', 'document'];
       const allTabs = ['request', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin'];
@@ -3761,6 +3980,7 @@
         activeBtn.classList.remove('text-purple-100', 'text-amber-200');
       }
 
+      if (tabName === 'request') refreshPermitNumberPreview();
       if (tabName === 'dashboard') renderDashboard();
       if (tabName === 'document') {
         renderDocCardsList();
@@ -3928,15 +4148,17 @@
     // 5. การรันเลขที่ใบอนุญาต & การจัดการไฟล์แนบอ้างอิง
     // =========================================================================
     function getNextPermitNumber(isoDateStr, consume = false) {
-      const ceYear = isoDateStr ? parseInt(isoDateStr.split('-')[0], 10) : 2026;
-      const beYear = isNaN(ceYear) ? 2569 : ceYear + 543;
-      const shortYear = String(beYear).slice(-2);
-      if (typeof yearSequenceCounters[beYear] !== 'number') {
-        yearSequenceCounters[beYear] = 0;
-      }
-      const nextSeq = yearSequenceCounters[beYear] + 1;
+      const ceYear = isoDateStr ? parseInt(isoDateStr.split('-')[0], 10) : new Date().getFullYear();
+      const beYear = isNaN(ceYear) ? (new Date().getFullYear() + 543) : ceYear + 543;
+      const key = String(beYear);
+      const shortYear = key.slice(-2);
+      const rawVal = (typeof yearSequenceCounters[key] !== 'undefined') ? yearSequenceCounters[key] : yearSequenceCounters[beYear];
+      const curSeq = isNaN(parseInt(rawVal, 10)) ? 0 : parseInt(rawVal, 10);
+      yearSequenceCounters[key] = curSeq;
+      const nextSeq = curSeq + 1;
       if (consume) {
-        yearSequenceCounters[beYear] = nextSeq;
+        yearSequenceCounters[key] = nextSeq;
+        syncAdminSequenceInputs();
         saveAllToLocalStorage();
       }
       return { permitNo: `WPผจฟ.1 No.${nextSeq}/${shortYear}`, seq: nextSeq, beYear };
@@ -4624,7 +4846,7 @@
       p.verifierRejectReason = '';
       p.verifierUserId = currentUser.id;
       p.verifierName = signerName;
-      p.verifierPosition = currentUser.department || 'ผจฟ.1 กปบ.(ก3)';
+      p.verifierPosition = currentUser.position || currentUser.department || 'ผจฟ.1 กปบ.(ก3)';
       p.verifierSigned = true;
       p.verifierSignedDate = now.shortDate;
       p.verifierAutoSigned = false;
@@ -4796,7 +5018,7 @@
 
       p.approverUserId = currentUser.role === 'approver' ? currentUser.id : 'USR-SUPACHOK';
       p.approverName = approverFullName;
-      p.approverPosition = currentUser.role === 'approver' ? currentUser.department : 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)';
+      p.approverPosition = currentUser.role === 'approver' ? (currentUser.position || currentUser.department) : 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)';
       p.approverSigned = true;
       p.approverSignedDate = now.shortDate;
       p.status = 'APPROVED';
@@ -5444,7 +5666,7 @@
       const now = getCurrentThaiDateTime();
       p.workReport.kpbSignerUserId = currentUser.id;
       p.workReport.kpbSignerName = `${currentUser.firstName} ${currentUser.lastName}`;
-      p.workReport.kpbSignerPosition = currentUser.department || 'หน่วยปฏิบัติงาน / พนักงานสถานีไฟฟ้า';
+      p.workReport.kpbSignerPosition = currentUser.position || currentUser.department || 'หน่วยปฏิบัติงาน / พนักงานสถานีไฟฟ้า';
       p.workReport.kpbSignerDept = 'ผจฟ.1 กปบ.(ก3)';
       p.workReport.kpbSignedDate = now.shortDate;
       p.dispatchLogs.push({
@@ -5466,7 +5688,7 @@
       const canReport = currentUser && ['requester', 'station_staff', 'verifier', 'dispatch_verifier', 'admin'].includes(currentUser.role);
       const canKpbSign = currentUser && ['station_staff', 'verifier', 'dispatch_verifier', 'admin'].includes(currentUser.role);
       const defaultReporterName = existing ? existing.reporterName : (p.supervisorName || (currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : ''));
-      const defaultReporterPos = existing ? existing.reporterPosition : (p.supervisorPosition || 'ผู้ควบคุมงาน');
+      const defaultReporterPos = existing ? existing.reporterPosition : ((currentUser && currentUser.position) || p.supervisorPosition || 'ผู้ควบคุมงาน');
       const defaultReporterDept = existing ? existing.reporterDept : (p.orgName || (currentUser ? currentUser.department : ''));
 
       // SLA 7 วัน นับถัดจากวันที่ปฏิบัติงานแล้วเสร็จ (ข้อ 1.10)
@@ -6609,6 +6831,7 @@
     }
 
     function renderAdminConsole() {
+      syncAdminSequenceInputs();
       if (!currentUser || currentUser.role !== 'admin') return;
       updatePendingUsersBadge();
       const clientInput = document.getElementById('adm-gdrive-client-id');
@@ -6640,6 +6863,7 @@
       const q = (document.getElementById('admin-user-search')?.value || '').toLowerCase().trim();
       const filtered = usersDb.filter(u =>
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
+        (u.position || '').toLowerCase().includes(q) ||
         u.department.toLowerCase().includes(q) ||
         (u.phone || '').toLowerCase().includes(q) ||
         u.username.toLowerCase().includes(q)
@@ -6653,6 +6877,9 @@
             <td class="p-3">
               <div class="font-bold text-slate-800">${u.firstName} ${u.lastName}</div>
               <div class="text-[10px] text-slate-400">ลงทะเบียน: ${u.registeredAt}</div>
+            </td>
+            <td class="p-3">
+              <input type="text" id="adm-pos-${u.id}" value="${u.position || ''}" placeholder="เช่น วศก.7" class="w-32 rounded-lg border border-slate-300 px-2 py-1 text-xs bg-white">
             </td>
             <td class="p-3">
               <input type="text" id="adm-dept-${u.id}" value="${u.department}" class="w-36 rounded-lg border border-slate-300 px-2 py-1 text-xs bg-white">
@@ -6709,11 +6936,16 @@
     function adminSaveUserRow(userId, targetStatus) {
       const u = usersDb.find(item => item.id === userId);
       if (!u) return;
+      u.position = (document.getElementById(`adm-pos-${userId}`)?.value || '').trim();
       u.department = document.getElementById(`adm-dept-${userId}`).value.trim() || u.department;
       u.phone = document.getElementById(`adm-phone-${userId}`).value.trim();
       u.password = document.getElementById(`adm-pass-${userId}`).value.trim() || u.password;
       u.role = document.getElementById(`adm-role-${userId}`).value;
       u.status = targetStatus;
+      if (currentUser && currentUser.id === u.id) {
+        currentUser = { ...currentUser, ...u };
+        refreshCurrentUserHeaderAndRequestFields();
+      }
 
       saveAllToLocalStorage();
       updatePendingUsersBadge();
@@ -6725,6 +6957,7 @@
       e.preventDefault();
       const firstName = document.getElementById('adm-new-first').value.trim();
       const lastName = document.getElementById('adm-new-last').value.trim();
+      const position = (document.getElementById('adm-new-position')?.value || '').trim();
       const department = document.getElementById('adm-new-dept').value.trim();
       const phone = document.getElementById('adm-new-phone').value.trim();
       const username = document.getElementById('adm-new-user').value.trim();
@@ -6741,6 +6974,7 @@
         id: 'USR-' + Date.now(),
         firstName,
         lastName,
+        position,
         department,
         phone,
         username,
@@ -6768,13 +7002,45 @@
       showToast(`ลบบัญชี ${removed.firstName} ${removed.lastName} ออกจากระบบแล้ว`, 'warning');
     }
 
-    function adminSaveSequenceSettings() {
+    function syncAdminSequenceInputs() {
+      const yrEl = document.getElementById('adm-seq-year');
+      const numEl = document.getElementById('adm-seq-num');
+      if (!yrEl || !numEl) return;
+      const startIso = document.getElementById('startDate')?.value;
+      const ceY = startIso ? parseInt(startIso.split('-')[0], 10) : new Date().getFullYear();
+      const activeBe = isNaN(ceY) ? 2569 : ceY + 543;
+      const yrKey = String(parseInt(yrEl.value, 10) || activeBe);
+      const val = yearSequenceCounters[yrKey];
+      if (typeof val !== 'undefined' && !isNaN(parseInt(val, 10))) {
+        numEl.value = String(parseInt(val, 10));
+      }
+    }
+
+    async function adminSaveSequenceSettings() {
       const yr = parseInt(document.getElementById('adm-seq-year').value, 10) || 2569;
-      const seq = parseInt(document.getElementById('adm-seq-num').value, 10) || 0;
-      yearSequenceCounters[yr] = seq;
-      saveAllToLocalStorage();
+      const seq = parseInt(document.getElementById('adm-seq-num').value, 10);
+      if (isNaN(seq) || seq < 0) {
+        showToast('กรุณากรอกเลขลำดับล่าสุดเป็นตัวเลขตั้งแต่ 0 ขึ้นไป', 'error');
+        return;
+      }
+      yearSequenceCounters[String(yr)] = seq;
+      try {
+        localStorage.setItem(STORAGE_KEYS.SEQ, JSON.stringify(yearSequenceCounters));
+      } catch (_) {}
       refreshPermitNumberPreview();
-      showToast(`ตั้งค่าเลขรันปี พ.ศ. ${yr} ล่าสุดเป็น ${seq} เรียบร้อยแล้ว`, 'success');
+      const nextPreview = `WPผจฟ.1 No.${seq + 1}/${String(yr).slice(-2)}`;
+      if (isOnlineCloudConfigured()) {
+        showToast(`กำลังบันทึกเลขรันปี พ.ศ. ${yr} (${nextPreview}) ขึ้น Google Sheets...`, 'info');
+        const ok = await syncPushToGoogleSheet(false);
+        if (ok) {
+          showToast(`บันทึกเลขรันปี พ.ศ. ${yr} สำเร็จ! เลขถัดไปหน้าแรกคือ ${nextPreview}`, 'success');
+        } else {
+          showToast(`อัปเดตในหน้าจอเป็น ${nextPreview} แล้ว แต่ซิงก์ขึ้น Google Sheets ไม่สำเร็จ`, 'warning');
+        }
+      } else {
+        saveAllToLocalStorage(true);
+        showToast(`ตั้งค่าเลขรันปี พ.ศ. ${yr} ล่าสุดเป็น ${seq} (ถัดไป: ${nextPreview}) เรียบร้อยแล้ว`, 'success');
+      }
     }
 
     function adminAddStation() {
