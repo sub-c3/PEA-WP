@@ -228,6 +228,9 @@
   <!-- แถบแจ้งเตือน Toast -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none px-4 sm:px-0"></div>
 
+  <!-- กล่องแนะนำรายชื่อผู้ใช้แบบลอย (ใช้กับตารางผู้เข้าปฏิบัติงาน) -->
+  <div id="worker-suggest-popover" class="hidden fixed z-50 bg-white border border-purple-200 rounded-xl shadow-2xl w-72 max-h-56 overflow-y-auto divide-y divide-slate-100 no-print"></div>
+
   <!-- ปฏิทินเลือกวันที่แบบไทย (พ.ศ.) สำหรับปุ่มปฏิทินหน้ายื่นคำขอ -->
   <div id="thai-calendar-popover" class="hidden fixed z-50 bg-white rounded-2xl shadow-2xl border border-purple-200 p-3.5 w-72 select-none no-print">
     <div class="flex items-center justify-between mb-2.5">
@@ -576,7 +579,8 @@
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทผู้ใช้งานที่ขอลงทะเบียน <span class="text-rose-500">*</span></label>
             <select id="reg-requested-role" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-pea-purple">
-              <option value="requester">หน่วยงานผู้ขออนุญาตเข้าปฏิบัติงาน</option>
+              <option value="requester">หน่วยงานผู้ขออนุญาตเข้าปฏิบัติงาน (ผู้ร่างคำขอ)</option>
+              <option value="request_approver">ผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป)</option>
               <option value="station_staff">พนักงานสถานีไฟฟ้า (เข้าดูใบอนุมัติ / ยื่นขอ / รายงานผลปิดงาน)</option>
               <option value="verifier">ผู้ตรวจสอบ แผนกจัดการงานสถานีไฟฟ้า 1 (ผจฟ.1)</option>
               <option value="dispatch_verifier">ผู้ตรวจสอบ พนักงานศูนย์ควบคุมการจ่ายไฟเขต (กรณีฉุกเฉิน)</option>
@@ -613,7 +617,7 @@
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <h1 class="text-base sm:text-lg font-bold tracking-wide">ระบบตรวจสอบและอนุมัติ PEA Work Permit</h1>
-            <span class="text-[11px] bg-amber-400/20 text-amber-200 border border-amber-300/40 px-2 py-0.5 rounded-full font-medium">FMO-SOH3-503-6203</span>
+            <span class="text-[11px] bg-amber-400/20 text-amber-200 border border-amber-300/40 px-2 py-0.5 rounded-full font-medium">Substation Area Work Permit • 2569</span>
           </div>
           <p class="text-xs text-purple-200">แผนกจัดการงานสถานีไฟฟ้า 1 (ผจฟ.1) กปบ.(ก3) • การไฟฟ้าส่วนภูมิภาค</p>
         </div>
@@ -623,6 +627,9 @@
       <div class="flex items-center gap-2 text-xs flex-wrap">
         <div class="bg-white/10 backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span>รอ หผ.คำขอ: <strong id="badge-req-approver-count" class="text-fuchsia-300">0</strong></span>
+        </div>
+        <div class="hidden xl:flex items-center gap-1.5 bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/15">
           <span>รอตรวจ: <strong id="badge-verifier-count" class="text-amber-300">0</strong></span>
         </div>
         <div class="bg-white/10 backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5">
@@ -715,6 +722,11 @@
         <button onclick="switchTab('request')" id="tab-btn-request" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition bg-white text-pea-dark shadow">
           <i data-lucide="file-plus-2" class="w-4 h-4"></i>
           <span>1. ยื่นขอ Work Permit (ผู้ขอเข้าสถานี)</span>
+        </button>
+        <button onclick="switchTab('req_approver')" id="tab-btn-req_approver" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition text-purple-100 hover:bg-white/10">
+          <i data-lucide="file-check-2" class="w-4 h-4"></i>
+          <span>1.5 อนุมัติจัดทำคำขอ (ระดับ หผ.)</span>
+          <span id="nav-count-req-approver" class="bg-fuchsia-400 text-slate-900 text-[11px] font-bold px-1.5 py-0.2 rounded-full">0</span>
         </button>
         <button onclick="switchTab('verifier')" id="tab-btn-verifier" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition text-purple-100 hover:bg-white/10">
           <i data-lucide="shield-check" class="w-4 h-4"></i>
@@ -961,6 +973,7 @@
             <option value="ALL">แสดงทุกสถานะ</option>
             <option value="APPROVED">อนุมัติแล้วเท่านั้น</option>
             <option value="VERIFIED_PENDING_APPROVER">รอผู้อนุมัติ กปบ.(ก3)</option>
+            <option value="PENDING_REQUEST_APPROVER">รอ หผ. อนุมัติจัดทำคำขอ</option>
             <option value="PENDING_VERIFIER">รอผู้ตรวจสอบ</option>
           </select>
         </div>
@@ -1162,10 +1175,11 @@
                     <span>ผู้ควบคุมงาน (หน่วยงาน กฟภ.) — บังคับระบุเสมอ</span>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
+                    <div class="relative" id="supervisor-autocomplete-wrap">
                       <label class="block text-[11px] font-semibold text-slate-700 mb-1">ชื่อ-สกุล ผู้ควบคุมงาน (กฟภ.) <span class="text-rose-500">*</span></label>
-                      <input type="text" id="supervisorName" list="supervisor-directory-list" oninput="onSupervisorNameAutoFill()" required placeholder="พิมพ์หรือเลือกจากประวัติ..." class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                      <input type="text" id="supervisorName" autocomplete="off" onfocus="renderUniversalUserSuggest(this, 'supervisor')" oninput="onSupervisorNameAutoFill(); renderUniversalUserSuggest(this, 'supervisor')" required placeholder="พิมพ์ชื่อเพื่อเลือกจากระบบหรือกรอกเอง..." class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
                       <datalist id="supervisor-directory-list"></datalist>
+                      <div id="supervisor-suggest-box" class="hidden absolute left-0 right-0 mt-1 bg-white border border-purple-200 rounded-xl shadow-xl z-40 max-h-52 overflow-y-auto divide-y divide-slate-100"></div>
                     </div>
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-700 mb-1">โทรศัพท์ <span class="text-rose-500">*</span></label>
@@ -1450,7 +1464,7 @@
                     </div>
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-600 mb-1">ตำแหน่งผู้ร่างคำขอ</label>
-                      <input type="text" id="requesterPosition" placeholder="เช่น วศก.5 / พชง.5" value="วศก.5" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                      <input type="text" id="requesterPosition" placeholder="เช่น วศก.7 / พชง.5" value="" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
                     </div>
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-600 mb-1">สังกัดผู้ร่างคำขอ</label>
@@ -1471,17 +1485,24 @@
                     <span class="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-semibold">ตรวจกลั่นกรองก่อนส่ง กปบ.</span>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div class="sm:col-span-2">
-                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">ชื่อ-นามสกุล ผู้อนุมัติจัดทำคำขอ (ระดับ หผ. ขึ้นไป) <span class="text-rose-500">*</span></label>
-                      <input type="text" id="requestApproverName" required placeholder="เช่น นายสมชาย รักงาน" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                    <div class="sm:col-span-2 relative" id="req-approver-autocomplete-wrap">
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">ค้นหา/เลือก ผู้อนุมัติจัดทำคำขอ (พิมพ์ชื่อ ตำแหน่ง หรือสังกัดเพื่อเลือกจากระบบ)</label>
+                      <input type="text" id="requestApproverName" autocomplete="off"
+                        onfocus="renderRequestApproverSuggestions(this.value)"
+                        oninput="onRequestApproverInput(this.value)"
+                        placeholder="พิมพ์ชื่อ หผ. เช่น วิชัย หรือคลิกเพื่อดูรายชื่อในระบบ..."
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-pea-purple">
+                      <input type="hidden" id="requestApproverTargetUserId" value="">
+                      <div id="req-approver-match-badge" class="hidden mt-1 text-[11px] font-semibold text-emerald-700 flex items-center gap-1"></div>
+                      <div id="req-approver-suggest-box" class="hidden absolute left-0 right-0 mt-1 bg-white border border-purple-200 rounded-xl shadow-xl z-40 max-h-56 overflow-y-auto divide-y divide-slate-100"></div>
                     </div>
                     <div>
-                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">ตำแหน่ง <span class="text-rose-500">*</span></label>
-                      <input type="text" id="requestApproverPosition" required placeholder="เช่น หผ.บษ.(ก3)" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">ตำแหน่ง</label>
+                      <input type="text" id="requestApproverPosition" placeholder="เช่น หผ.บษ.(ก3)" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
                     </div>
                     <div>
-                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">สังกัด <span class="text-rose-500">*</span></label>
-                      <input type="text" id="requestApproverDept" required placeholder="เช่น กบษ.(ก3)" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">สังกัด</label>
+                      <input type="text" id="requestApproverDept" placeholder="เช่น กบษ.(ก3)" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
                     </div>
                   </div>
                 </div>
@@ -1501,6 +1522,34 @@
           </div>
         </div>
       </form>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- แท็บ 1.5: หน้าผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป — ลงนามส่วนที่ 1) -->
+    <!-- ===================================================================== -->
+    <section id="view-req_approver" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-fuchsia-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-fuchsia-100 text-fuchsia-800 flex items-center justify-center font-bold text-xs text-center leading-tight">
+            ระดับ<br>หผ.+
+          </div>
+          <div>
+            <span class="text-xs font-semibold text-fuchsia-800 bg-fuchsia-50 px-2.5 py-0.5 rounded-full border border-fuchsia-200">บทบาท: ผู้อนุมัติจัดทำคำขออนุญาต (หลักเกณฑ์ข้อ 1.1)</span>
+            <h2 class="text-lg font-bold text-slate-800 mt-0.5">คิวพิจารณาอนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป)</h2>
+            <p class="text-xs text-slate-500">ตรวจสอบความถูกต้องของคำขอที่ผู้ร่างส่งมา ลงนามในช่อง <strong>"ผู้อนุมัติจัดทำคำขออนุญาต"</strong> ส่วนที่ 1 แล้วส่งต่อให้ กปบ. (ผจฟ.1 / ศูนย์ฯ จ่ายไฟ) พิจารณา</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <label class="text-xs font-semibold text-slate-600">แสดงรายการ:</label>
+          <select id="req-approver-status-filter" onchange="renderRequestApproverQueue()" class="rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm bg-white font-medium text-slate-800">
+            <option value="PENDING_REQUEST_APPROVER">เฉพาะรออนุมัติจัดทำคำขอ</option>
+            <option value="ALL">ทั้งหมดในระบบ</option>
+            <option value="DONE">รายการที่ดำเนินการแล้ว</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="req-approver-list" class="space-y-4"></div>
     </section>
 
     <!-- ===================================================================== -->
@@ -1937,7 +1986,8 @@
             <label class="block text-[11px] font-semibold text-slate-600 mb-1">กำหนดสิทธิ์บทบาท</label>
             <select id="adm-new-role" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs bg-white">
               <option value="station_staff">พนักงานสถานี (ดูใบอนุมัติ / สิทธิ์เท่าผู้ขออนุญาต)</option>
-              <option value="requester">ผู้ขออนุญาต (สิทธิ์แท็บ 1,4,5)</option>
+              <option value="requester">ผู้ขออนุญาต (ผู้ร่างคำขอ)</option>
+              <option value="request_approver">ผู้อนุมัติจัดทำคำขอ (ระดับ หผ. ขึ้นไป)</option>
               <option value="verifier">ผู้ตรวจสอบ ผจฟ.1 (กรณีปกติ / ฉุกเฉินในเวลาราชการ)</option>
               <option value="dispatch_verifier">ผู้ตรวจสอบ ศูนย์ควบคุมการจ่ายไฟเขต (กรณีฉุกเฉิน)</option>
               <option value="approver">ผู้อนุมัติ กปบ.(ก3) (สิทธิ์แท็บ 3-5)</option>
@@ -2343,6 +2393,7 @@
               const latestMe = usersDb.find(u => u.id === currentUser.id);
               if (latestMe) currentUser = latestMe;
               renderNotifications();
+              renderRequestApproverQueue();
               renderVerifierQueue();
               renderApproverQueue();
               renderStatusTracker();
@@ -2465,7 +2516,8 @@
     // 1. บัญชีผู้ใช้งานตั้งต้น (admin/admin + ผู้ตรวจสอบ + ผู้อนุมัติ) & สิทธิ์ RBAC
     // =========================================================================
     const ROLE_LABELS = {
-      requester: 'ผู้ขออนุญาต (สิทธิ์แท็บ 1, 4, 5)',
+      requester: 'ผู้ขออนุญาต / ผู้ร่างคำขอ (สิทธิ์แท็บ 1, 4, 5)',
+      request_approver: 'ผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป)',
       station_staff: 'พนักงานสถานี (ดูใบอนุมัติ / ยื่นขอ / รายงานผล สิทธิ์เท่าผู้ขออนุญาต)',
       verifier: 'ผู้ตรวจสอบ ผจฟ.1 (งานปกติ / ฉุกเฉินในเวลาราชการ)',
       dispatch_verifier: 'ผู้ตรวจสอบ ศูนย์ควบคุมการจ่ายไฟเขต (กรณีฉุกเฉิน)',
@@ -2475,11 +2527,12 @@
 
     const ROLE_ALLOWED_TABS = {
       requester: ['dashboard', 'request', 'status', 'document'],
+      request_approver: ['dashboard', 'request', 'req_approver', 'status', 'document'],
       station_staff: ['dashboard', 'request', 'status', 'document'],
       verifier: ['dashboard', 'request', 'verifier', 'approver', 'status', 'document', 'schedule'],
       dispatch_verifier: ['dashboard', 'request', 'verifier', 'approver', 'status', 'document', 'schedule'],
       approver: ['dashboard', 'approver', 'status', 'document'],
-      admin: ['dashboard', 'request', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin']
+      admin: ['dashboard', 'request', 'req_approver', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin']
     };
 
     const DEFAULT_USERS = [
@@ -2493,6 +2546,20 @@
         username: 'admin',
         password: 'admin',
         role: 'admin',
+        status: 'ACTIVE',
+        signatureDataUrl: '',
+        registeredAt: 'ระบบตั้งต้น'
+      },
+      {
+        id: 'USR-HEAD-01',
+        firstName: 'วิชัย',
+        lastName: 'บำรุงระบบ',
+        position: 'หผ.บษ.(ก3)',
+        department: 'กบษ.(ก3)',
+        phone: '081-5559900',
+        username: 'head',
+        password: '1234',
+        role: 'request_approver',
         status: 'ACTIVE',
         signatureDataUrl: '',
         registeredAt: 'ระบบตั้งต้น'
@@ -2597,9 +2664,12 @@
         requesterDept: 'ผบษ.(ก3)',
         requesterPhone: '082-1289484',
         requesterEmail: 'thatsana.h@pea.co.th',
+        requestApproverUserId: 'USR-HEAD-01',
         requestApproverName: 'นายวิชัย บำรุงระบบ',
         requestApproverPosition: 'หผ.บษ.(ก3)',
         requestApproverDept: 'กบษ.(ก3)',
+        requestApproverSigned: true,
+        requestApproverSignedDate: '25/11/2569',
         orgType: 'กฟภ.',
         peaAffiliation: { gff: 'กฟก.3', fai: 'ฝปบ.(ก3)', kong: 'กบษ.(ก3)', phanaek: 'ผบษ.(ก3)' },
         extCompanyName: '',
@@ -2641,8 +2711,9 @@
         verifierSignedDate: '25/11/2569',
         verifierAutoSigned: true,
         verifierAdditionalNotes: '',
-        approverName: 'นายศุภโชค นาคราช',
-        approverPosition: 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)',
+        approverUserId: '',
+        approverName: '',
+        approverPosition: '',
         approverSigned: false,
         approverSignedDate: '',
         driveStorage: null,
@@ -2773,139 +2844,221 @@
       const userFullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
       const items = [];
 
+      // Admin: แจ้งเตือนบัญชีสมัครใหม่รออนุมัติสิทธิ์
+      if (role === 'admin') {
+        const pendingUsers = usersDb.filter(u => u.status === 'PENDING_ROLE');
+        pendingUsers.forEach(u => {
+          const uNotifId = `USER_PENDING::${u.id}`;
+          items.push({
+            id: uNotifId,
+            permitId: '',
+            permitNo: 'บัญชีผู้ใช้ใหม่',
+            station: u.department || '-',
+            badgeText: 'รออนุมัติสิทธิ์',
+            badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+            icon: 'user-plus',
+            iconColor: 'text-rose-600 bg-rose-50',
+            title: `คำขอสมัครใช้งาน: ${u.firstName} ${u.lastName}`,
+            desc: `${u.position ? u.position + ' • ' : ''}${u.department} (${ROLE_LABELS[u.role] || u.role})`,
+            time: u.registeredAt || '-',
+            targetTab: 'admin',
+            isUnread: !readSet.has(uNotifId)
+          });
+        });
+      }
+
       permits.forEach(p => {
         const lastLog = (p.dispatchLogs && p.dispatchLogs.length > 0)
           ? p.dispatchLogs[p.dispatchLogs.length - 1]
           : null;
         const latestTime = lastLog ? lastLog.time : formatThaiDate(p.requestDate);
+        const isEmergencyPermit = !!p.isEmergency || (p.workCategory || '').includes('ฉุกเฉิน');
 
-        // 1) ผู้ขออนุญาต / พนักงานสถานี: เฉพาะใบคำขอของตนที่อนุมัติแล้ว (APPROVED)
+        // 1) ผู้ขออนุญาต / พนักงานสถานี: ติดตามความคืบหน้าใบคำขอของตนทุกขั้นตอนที่เชื่อมต่อกัน
         if (role === 'requester' || role === 'station_staff') {
           const isOwnPermit =
             p.requesterUserId === currentUser.id ||
             (p.requesterFullName && p.requesterFullName.includes(userFullName));
+          if (!isOwnPermit) return;
 
-          if (isOwnPermit && p.status === 'APPROVED') {
-            const notifId = `${p.id}::APPROVED`;
+          if (p.status === 'PENDING_VERIFIER' && p.requestApproverSigned) {
+            const nid = `${p.id}::HEAD_APPROVED`;
             items.push({
-              id: notifId,
-              permitId: p.id,
-              permitNo: p.permitNo,
-              station: p.station,
-              badgeText: 'อนุมัติแล้ว',
-              badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-              icon: 'check-circle-2',
-              iconColor: 'text-emerald-600 bg-emerald-50',
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'หผ.อนุมัติคำขอแล้ว', badgeClass: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300',
+              icon: 'file-check-2', iconColor: 'text-fuchsia-600 bg-fuchsia-50',
+              title: `${p.permitNo} ผ่าน หผ. ส่งต่อ กปบ. แล้ว`,
+              desc: `อนุมัติจัดทำโดย ${p.requestApproverName} — รอผู้ตรวจสอบพิจารณา`,
+              time: latestTime, targetTab: 'status', isUnread: !readSet.has(nid)
+            });
+          } else if (p.status === 'VERIFIED_PENDING_APPROVER') {
+            const nid = `${p.id}::VERIFIED`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'ผ่านตรวจสอบ', badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
+              icon: 'shield-check', iconColor: 'text-sky-600 bg-sky-50',
+              title: `${p.permitNo} ผ่านตรวจแล้ว รอ กปบ.(ก3) อนุมัติ`,
+              desc: `${p.workTitle} • สฟ.${p.station} (${formatThaiDate(p.startDate)})`,
+              time: latestTime, targetTab: 'status', isUnread: !readSet.has(nid)
+            });
+          } else if (p.status === 'APPROVED') {
+            const nid = `${p.id}::APPROVED`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'อนุมัติแล้ว', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+              icon: 'check-circle-2', iconColor: 'text-emerald-600 bg-emerald-50',
               title: `${p.permitNo} • สฟ.${p.station} ได้รับการอนุมัติแล้ว`,
               desc: `${p.workTitle} (${formatThaiDate(p.startDate)} ${p.startTime}-${p.endTime} น.) — อนุมัติโดย ${p.approverName}`,
-              time: latestTime,
-              targetTab: 'document',
-              isUnread: !readSet.has(notifId)
+              time: latestTime, targetTab: 'document', isUnread: !readSet.has(nid)
+            });
+          } else if (p.status === 'REJECTED') {
+            const nid = `${p.id}::REJECTED`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'ไม่อนุมัติ / ตีกลับ', badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+              icon: 'x-circle', iconColor: 'text-rose-600 bg-rose-50',
+              title: `${p.permitNo} • สฟ.${p.station} ถูกส่งกลับ`,
+              desc: `${p.requestApproverRejectReason || p.verifierRejectReason || p.verifierAdditionalNotes || 'กรุณาตรวจสอบและยื่นปรับปรุงใหม่'}`,
+              time: latestTime, targetTab: 'status', isUnread: !readSet.has(nid)
             });
           }
         }
 
-        // 2) ผู้ตรวจสอบ (และ Admin): แจ้งเตือนทุกกระบวนการ (รอตรวจ, ผ่านตรวจ/รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)
-        else if (role === 'verifier' || role === 'dispatch_verifier' || role === 'admin') {
-          let stageKey = p.status;
-          let badgeText = '';
-          let badgeClass = '';
-          let icon = 'file-text';
-          let iconColor = 'text-pea-purple bg-purple-50';
-          let title = '';
-          let desc = `${p.workTitle} • ผู้ขอ: ${p.requesterFullName || p.supervisorName} (${p.requesterDept || p.orgName})`;
-          let targetTab = 'document';
-
-          if (p.status === 'PENDING_VERIFIER') {
-            badgeText = 'รอตรวจสอบ';
-            badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
-            icon = 'clock';
-            iconColor = 'text-amber-600 bg-amber-50';
-            title = `[รอตรวจ] ${p.permitNo} • สฟ.${p.station}`;
-            targetTab = 'verifier';
-          } else if (p.status === 'VERIFIED_PENDING_APPROVER') {
-            badgeText = 'ผ่านตรวจ/รออนุมัติ';
-            badgeClass = 'bg-sky-100 text-sky-800 border-sky-300';
-            icon = 'shield-check';
-            iconColor = 'text-sky-600 bg-sky-50';
-            title = `[รออนุมัติ กปบ.(ก3)] ${p.permitNo} • สฟ.${p.station}`;
-            targetTab = 'approver';
-          } else if (p.status === 'APPROVED') {
-            badgeText = 'อนุมัติแล้ว';
-            badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-            icon = 'check-circle-2';
-            iconColor = 'text-emerald-600 bg-emerald-50';
-            title = `[อนุมัติแล้ว] ${p.permitNo} • สฟ.${p.station}`;
-            targetTab = 'document';
-          } else if (p.status === 'REJECTED') {
-            badgeText = 'ตีกลับ';
-            badgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
-            icon = 'x-circle';
-            iconColor = 'text-rose-600 bg-rose-50';
-            title = `[ตีกลับ] ${p.permitNo} • สฟ.${p.station}`;
-            targetTab = 'verifier';
+        // 2) ผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป): เน้นคิวรอ หผ. อนุมัติคำขอ + ผลของใบที่ตนอนุมัติส่งต่อ
+        else if (role === 'request_approver') {
+          if (p.status === 'PENDING_REQUEST_APPROVER' && (!p.requestApproverUserId || p.requestApproverUserId === currentUser.id)) {
+            const nid = `${p.id}::PENDING_REQUEST_APPROVER`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: isEmergencyPermit ? '🚨 ฉุกเฉิน • รอ หผ.' : 'รอ หผ. อนุมัติคำขอ',
+              badgeClass: isEmergencyPermit ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300',
+              icon: 'file-check-2', iconColor: 'text-fuchsia-600 bg-fuchsia-50',
+              title: `[รอลงนามส่วนที่ 1] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `ผู้ร่าง: ${p.requesterFullName} (${p.requesterDept || p.orgName}) — ${p.workTitle}`,
+              time: latestTime, targetTab: 'req_approver', isUnread: !readSet.has(nid)
+            });
+          } else if (p.requestApproverUserId === currentUser.id && (p.status === 'APPROVED' || p.status === 'REJECTED')) {
+            const nid = `${p.id}::HEAD_TRACK_${p.status}`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: p.status === 'APPROVED' ? 'กปบ. อนุมัติแล้ว' : 'กปบ. ตีกลับ',
+              badgeClass: p.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300',
+              icon: p.status === 'APPROVED' ? 'check-circle-2' : 'x-circle',
+              iconColor: p.status === 'APPROVED' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50',
+              title: `${p.permitNo} • สฟ.${p.station} (${p.status === 'APPROVED' ? 'กปบ.อนุมัติแล้ว' : 'ถูกส่งกลับ'})`,
+              desc: `${p.workTitle} (${formatThaiDate(p.startDate)})`,
+              time: latestTime, targetTab: 'document', isUnread: !readSet.has(nid)
+            });
           }
+        }
 
-          const mainNotifId = `${p.id}::STAGE_${stageKey}`;
-          items.push({
-            id: mainNotifId,
-            permitId: p.id,
-            permitNo: p.permitNo,
-            station: p.station,
-            badgeText,
-            badgeClass,
-            icon,
-            iconColor,
-            title,
-            desc,
-            time: latestTime,
-            targetTab,
-            isUnread: !readSet.has(mainNotifId)
-          });
+        // 3) พนักงานศูนย์ควบคุมการจ่ายไฟเขต (dispatch_verifier): เฉพาะงานฉุกเฉินที่ผ่าน หผ. และรอตรวจสอบ
+        else if (role === 'dispatch_verifier') {
+          if (p.status === 'PENDING_VERIFIER' && isEmergencyPermit) {
+            const nid = `${p.id}::DISPATCH_EMERGENCY`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: '🚨 ฉุกเฉิน • รอศูนย์ฯตรวจ', badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+              icon: 'alert-octagon', iconColor: 'text-rose-600 bg-rose-50',
+              title: `[ฉุกเฉิน] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `ผ่าน หผ. แล้ว • ${p.workTitle} (${formatThaiDate(p.startDate)} ${p.startTime}-${p.endTime} น.)`,
+              time: latestTime, targetTab: 'verifier', isUnread: !readSet.has(nid)
+            });
+          }
+        }
 
+        // 4) ผู้ตรวจสอบ ผจฟ.1 (verifier): คิวรอตรวจ (หลังผ่าน หผ.) + รายงานผลปิดงานส่วนที่ 3
+        else if (role === 'verifier') {
+          if (p.status === 'PENDING_REQUEST_APPROVER') {
+            stBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-300">รอ หผ. อนุมัติจัดทำคำขอ</span>`;
+          } else if (p.status === 'PENDING_VERIFIER') {
+            const nid = `${p.id}::PENDING_VERIFIER`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: isEmergencyPermit ? '🚨 ฉุกเฉิน • รอตรวจ' : 'รอ ผจฟ.1 ตรวจสอบ',
+              badgeClass: isEmergencyPermit ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-amber-100 text-amber-800 border-amber-300',
+              icon: 'clock', iconColor: 'text-amber-600 bg-amber-50',
+              title: `[รอตรวจ] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workTitle} • ผ่าน หผ.: ${p.requestApproverName || '-'} (${formatThaiDate(p.startDate)})`,
+              time: latestTime, targetTab: 'verifier', isUnread: !readSet.has(nid)
+            });
+          }
           if (p.workReport) {
             const repNotifId = `${p.id}::REPORTED_${p.workReport.reportedAt}`;
             items.push({
-              id: repNotifId,
-              permitId: p.id,
-              permitNo: p.permitNo,
-              station: p.station,
-              badgeText: 'รายงานผลแล้ว',
-              badgeClass: 'bg-purple-100 text-pea-dark border-purple-300',
-              icon: 'clipboard-check',
-              iconColor: 'text-pea-purple bg-purple-50',
-              title: `[รายงานผลปิดงาน] ${p.permitNo} • สฟ.${p.station}`,
+              id: repNotifId, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'รายงานผลปิดงาน', badgeClass: 'bg-purple-100 text-pea-dark border-purple-300',
+              icon: 'clipboard-check', iconColor: 'text-pea-purple bg-purple-50',
+              title: `[รายงานผลส่วนที่ 3] ${p.permitNo} • สฟ.${p.station}`,
               desc: `${p.workReport.closeState} — โดย ${p.workReport.reporterName}`,
-              time: p.workReport.reportedAt,
-              targetTab: 'document',
-              isUnread: !readSet.has(repNotifId)
+              time: p.workReport.reportedAt, targetTab: 'document', isUnread: !readSet.has(repNotifId)
             });
           }
         }
 
-        // 3) ผู้อนุมัติ: แจ้งเตือนเฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ (VERIFIED_PENDING_APPROVER)
+        // 5) ผู้อนุมัติ กปบ.(ก3): เฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ
         else if (role === 'approver') {
           if (p.status === 'VERIFIED_PENDING_APPROVER') {
             const appNotifId = `${p.id}::VERIFIED_PENDING_APPROVER`;
             items.push({
-              id: appNotifId,
-              permitId: p.id,
-              permitNo: p.permitNo,
-              station: p.station,
-              badgeText: 'ผ่านตรวจ/รออนุมัติ',
-              badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
-              icon: 'stamp',
-              iconColor: 'text-sky-600 bg-sky-50',
-              title: `รออนุมัติ: ${p.permitNo} • สฟ.${p.station}`,
+              id: appNotifId, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'ผ่านตรวจ • รออนุมัติ', badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
+              icon: 'stamp', iconColor: 'text-sky-600 bg-sky-50',
+              title: `รออนุมัติ กปบ.(ก3): ${p.permitNo} • สฟ.${p.station}`,
               desc: `${p.workTitle} • ตรวจสอบแล้วโดย ${p.verifierName} (${formatThaiDate(p.startDate)})`,
-              time: latestTime,
-              targetTab: 'approver',
-              isUnread: !readSet.has(appNotifId)
+              time: latestTime, targetTab: 'approver', isUnread: !readSet.has(appNotifId)
+            });
+          }
+        }
+
+        // 6) Admin: เห็นทุกคิวงานที่รอดำเนินการ + รายงานผล
+        else if (role === 'admin') {
+          if (p.status === 'PENDING_REQUEST_APPROVER') {
+            const nid = `${p.id}::ADMIN_REQ_APP`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'รอ หผ. อนุมัติคำขอ', badgeClass: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300',
+              icon: 'file-check-2', iconColor: 'text-fuchsia-600 bg-fuchsia-50',
+              title: `[รอ หผ.] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workTitle} • ผู้ร่าง: ${p.requesterFullName}`,
+              time: latestTime, targetTab: 'req_approver', isUnread: !readSet.has(nid)
+            });
+          } else if (p.status === 'PENDING_VERIFIER') {
+            const nid = `${p.id}::ADMIN_VER`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'รอตรวจสอบ', badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+              icon: 'clock', iconColor: 'text-amber-600 bg-amber-50',
+              title: `[รอตรวจ] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workTitle} • (${formatThaiDate(p.startDate)})`,
+              time: latestTime, targetTab: 'verifier', isUnread: !readSet.has(nid)
+            });
+          } else if (p.status === 'VERIFIED_PENDING_APPROVER') {
+            const nid = `${p.id}::ADMIN_APP`;
+            items.push({
+              id: nid, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'รออนุมัติ กปบ.', badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
+              icon: 'stamp', iconColor: 'text-sky-600 bg-sky-50',
+              title: `[รออนุมัติ] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workTitle} • ตรวจโดย ${p.verifierName}`,
+              time: latestTime, targetTab: 'approver', isUnread: !readSet.has(nid)
+            });
+          }
+          if (p.workReport) {
+            const repNotifId = `${p.id}::REPORTED_${p.workReport.reportedAt}`;
+            items.push({
+              id: repNotifId, permitId: p.id, permitNo: p.permitNo, station: p.station,
+              badgeText: 'รายงานผลแล้ว', badgeClass: 'bg-purple-100 text-pea-dark border-purple-300',
+              icon: 'clipboard-check', iconColor: 'text-pea-purple bg-purple-50',
+              title: `[รายงานผลปิดงาน] ${p.permitNo} • สฟ.${p.station}`,
+              desc: `${p.workReport.closeState} — โดย ${p.workReport.reporterName}`,
+              time: p.workReport.reportedAt, targetTab: 'document', isUnread: !readSet.has(repNotifId)
             });
           }
         }
       });
 
+      items.sort((a, b) => (b.isUnread ? 1 : 0) - (a.isUnread ? 1 : 0));
       return items;
     }
 
@@ -2942,13 +3095,19 @@
       }
 
       if (scopeLabel) {
-        if (currentUser.role === 'requester' || currentUser.role === 'station_staff') {
-          scopeLabel.textContent = 'สิทธิ์แจ้งเตือน: เฉพาะคำขอของท่านที่อนุมัติแล้ว';
-        } else if (currentUser.role === 'verifier' || currentUser.role === 'dispatch_verifier' || currentUser.role === 'admin') {
-          scopeLabel.textContent = 'สิทธิ์แจ้งเตือน: ทุกกระบวนการ (รอตรวจ, รออนุมัติ, อนุมัติแล้ว, ตีกลับ, รายงานผล)';
-        } else if (currentUser.role === 'approver') {
-          scopeLabel.textContent = 'สิทธิ์แจ้งเตือน: เฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรออนุมัติ';
-        }
+      if (currentUser.role === 'requester' || currentUser.role === 'station_staff') {
+        scopeLabel.textContent = 'แจ้งเตือนความคืบหน้าใบคำขอของท่าน (หผ. / ตรวจสอบ / กปบ.อนุมัติ)';
+      } else if (currentUser.role === 'request_approver') {
+        scopeLabel.textContent = 'แจ้งเตือนคำขอใหม่รอ หผ. อนุมัติจัดทำคำขอ และผลอนุมัติจาก กปบ.';
+      } else if (currentUser.role === 'dispatch_verifier') {
+        scopeLabel.textContent = 'แจ้งเตือนเฉพาะงานฉุกเฉินที่ผ่าน หผ. แล้วรอศูนย์ฯ จ่ายไฟพิจารณา';
+      } else if (currentUser.role === 'verifier') {
+        scopeLabel.textContent = 'แจ้งเตือนรายการรอ ผจฟ.1 ตรวจสอบ และรายงานผลปิดงานส่วนที่ 3';
+      } else if (currentUser.role === 'approver') {
+        scopeLabel.textContent = 'แจ้งเตือนเฉพาะรายการที่ผ่านผู้ตรวจสอบแล้วและรอ กปบ.(ก3) อนุมัติ';
+      } else if (currentUser.role === 'admin') {
+        scopeLabel.textContent = 'แจ้งเตือนครบทุกขั้นตอน: สมัครใหม่ / รอ หผ. / รอตรวจ / รออนุมัติ / ปิดงาน';
+      }
       }
 
       if (!listContainer) return;
@@ -3027,13 +3186,22 @@
       renderNotifications();
 
       const allowed = currentUser ? (ROLE_ALLOWED_TABS[currentUser.role] || []) : [];
-      if (targetTab === 'verifier' && allowed.includes('verifier')) {
+      if (targetTab === 'req_approver' && allowed.includes('req_approver')) {
+        renderRequestApproverQueue();
+        switchTab('req_approver');
+      } else if (targetTab === 'verifier' && allowed.includes('verifier')) {
         renderVerifierQueue();
         switchTab('verifier');
       } else if (targetTab === 'approver' && allowed.includes('approver')) {
         renderApproverQueue();
         switchTab('approver');
-      } else {
+      } else if (targetTab === 'admin' && allowed.includes('admin')) {
+        renderAdminConsole();
+        switchTab('admin');
+      } else if (targetTab === 'status') {
+        renderStatusTracker();
+        switchTab('status');
+      } else if (permitId) {
         openDocumentPreview(permitId);
       }
     }
@@ -3146,7 +3314,7 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="p-1.5 text-center font-semibold text-slate-600 worker-row-idx">1</td>
-        <td class="p-1.5"><input type="text" class="worker-name w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs sm:text-sm" placeholder="ชื่อ-นามสกุล" value="${(data.name || '').replace(/"/g, '&quot;')}"></td>
+        <td class="p-1.5"><input type="text" autocomplete="off" onfocus="renderWorkerSuggestPopover(this)" oninput="renderWorkerSuggestPopover(this)" class="worker-name w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs sm:text-sm" placeholder="พิมพ์ชื่อเพื่อเลือกหรือกรอกเอง" value="${(data.name || '').replace(/"/g, '&quot;')}"></td>
         <td class="p-1.5"><input type="text" class="worker-dept w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs sm:text-sm" placeholder="สังกัด / บริษัท" value="${(data.dept || '').replace(/"/g, '&quot;')}"></td>
         <td class="p-1.5"><input type="tel" class="worker-phone w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs sm:text-sm" placeholder="เบอร์โทร" value="${(data.phone || '').replace(/"/g, '&quot;')}"></td>
         <td class="p-1.5 text-center"><button type="button" onclick="removeWorkerRow(this)" class="p-1 text-rose-500 hover:bg-rose-50 rounded-lg" title="ลบแถว"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
@@ -3577,6 +3745,181 @@
       }
     }
 
+
+    function getRequestApproverDirectory() {
+      return usersDb.filter(u => u.status === 'ACTIVE' && u.role === 'request_approver');
+    }
+
+    function onRequestApproverInput(query) {
+      const hiddenId = document.getElementById('requestApproverTargetUserId');
+      const badge = document.getElementById('req-approver-match-badge');
+      if (hiddenId) hiddenId.value = '';
+      if (badge) badge.classList.add('hidden');
+      renderRequestApproverSuggestions(query);
+    }
+
+    function renderRequestApproverSuggestions(query) {
+      const box = document.getElementById('req-approver-suggest-box');
+      if (!box) return;
+      const q = (query || '').trim().toLowerCase();
+      const candidates = getRequestApproverDirectory().filter(u => {
+        if (!q) return true;
+        const full = `${u.firstName} ${u.lastName} ${u.position || ''} ${u.department || ''}`.toLowerCase();
+        return full.includes(q);
+      });
+
+      if (candidates.length === 0) {
+        box.innerHTML = `<div class="p-3 text-xs text-rose-600 text-center">ไม่พบผู้ใช้ที่มีสิทธิ์ "ผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป)" ตรงกับ "${query}"</div>`;
+        box.classList.remove('hidden');
+        return;
+      }
+
+      box.innerHTML = candidates.slice(0, 8).map(u => {
+        const isHeadRole = u.role === 'request_approver';
+        return `
+          <button type="button" onclick="selectRequestApproverUser('${u.id}')" class="w-full text-left px-3 py-2.5 hover:bg-purple-50 transition flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs sm:text-sm font-bold text-slate-800">${u.firstName} ${u.lastName}</div>
+              <div class="text-[11px] text-slate-500">ตำแหน่ง: <strong class="text-pea-dark">${u.position || '-'}</strong> • สังกัด: ${u.department || '-'}</div>
+            </div>
+            <span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${isHeadRole ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-slate-100 text-slate-600'}">
+              ${isHeadRole ? 'หผ.อนุมัติคำขอ' : (u.role === 'admin' ? 'Admin' : 'ผู้บริหาร/ตรวจ')}
+            </span>
+          </button>
+        `;
+      }).join('');
+      box.classList.remove('hidden');
+    }
+
+    function selectRequestApproverUser(userId) {
+      const u = usersDb.find(item => item.id === userId);
+      if (!u) return;
+      const fullName = `${u.firstName} ${u.lastName}`;
+      const nameEl = document.getElementById('requestApproverName');
+      const posEl = document.getElementById('requestApproverPosition');
+      const deptEl = document.getElementById('requestApproverDept');
+      const idEl = document.getElementById('requestApproverTargetUserId');
+      const badge = document.getElementById('req-approver-match-badge');
+      const box = document.getElementById('req-approver-suggest-box');
+
+      if (nameEl) nameEl.value = fullName;
+      if (posEl) posEl.value = u.position || '';
+      if (deptEl) deptEl.value = u.department || '';
+      if (idEl) idEl.value = u.id;
+      if (badge) {
+        badge.textContent = `✓ เลือกจากบัญชีในระบบแล้ว: ${fullName} (${u.position || '-'} • ${u.department || '-'})`;
+        badge.classList.remove('hidden');
+      }
+      if (box) box.classList.add('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('req-approver-autocomplete-wrap');
+      const box = document.getElementById('req-approver-suggest-box');
+      if (wrap && box && !box.classList.contains('hidden') && !wrap.contains(e.target)) {
+        box.classList.add('hidden');
+      }
+    });
+
+
+    let activeWorkerSuggestInput = null;
+
+    function getAllActiveUsersDirectory() {
+      return usersDb.filter(u => u.status === 'ACTIVE');
+    }
+
+    function renderUniversalUserSuggest(inputEl, mode) {
+      const box = document.getElementById('supervisor-suggest-box');
+      if (!box || !inputEl) return;
+      const q = (inputEl.value || '').trim().toLowerCase();
+      const matches = getAllActiveUsersDirectory().filter(u => {
+        if (!q) return true;
+        return `${u.firstName} ${u.lastName} ${u.position || ''} ${u.department || ''}`.toLowerCase().includes(q);
+      });
+      if (matches.length === 0) {
+        box.classList.add('hidden');
+        return;
+      }
+      box.innerHTML = matches.slice(0, 8).map(u => `
+        <button type="button" onclick="pickSupervisorFromUsers('${u.id}')" class="w-full text-left px-3 py-2 hover:bg-purple-50 transition">
+          <div class="text-xs sm:text-sm font-bold text-slate-800">${u.firstName} ${u.lastName}</div>
+          <div class="text-[11px] text-slate-500">${u.position ? u.position + ' • ' : ''}${u.department || '-'} (${u.phone || '-'})</div>
+        </button>
+      `).join('');
+      box.classList.remove('hidden');
+    }
+
+    function pickSupervisorFromUsers(userId) {
+      const u = usersDb.find(item => item.id === userId);
+      if (!u) return;
+      const nameEl = document.getElementById('supervisorName');
+      const phoneEl = document.getElementById('supervisorPhone');
+      const posEl = document.getElementById('supervisorPosition');
+      const box = document.getElementById('supervisor-suggest-box');
+      if (nameEl) nameEl.value = `${u.firstName} ${u.lastName}`;
+      if (phoneEl && u.phone) phoneEl.value = u.phone;
+      if (posEl) posEl.value = u.position || '';
+      if (box) box.classList.add('hidden');
+    }
+
+    function renderWorkerSuggestPopover(inputEl) {
+      const pop = document.getElementById('worker-suggest-popover');
+      if (!pop || !inputEl) return;
+      activeWorkerSuggestInput = inputEl;
+      const q = (inputEl.value || '').trim().toLowerCase();
+      const matches = getAllActiveUsersDirectory().filter(u => {
+        if (!q) return true;
+        return `${u.firstName} ${u.lastName} ${u.position || ''} ${u.department || ''}`.toLowerCase().includes(q);
+      });
+      if (matches.length === 0) {
+        pop.classList.add('hidden');
+        return;
+      }
+      pop.innerHTML = matches.slice(0, 8).map(u => `
+        <button type="button" onclick="pickWorkerFromUsers('${u.id}')" class="w-full text-left px-3 py-2 hover:bg-purple-50 transition">
+          <div class="text-xs font-bold text-slate-800">${u.firstName} ${u.lastName}</div>
+          <div class="text-[11px] text-slate-500">${u.position ? u.position + ' • ' : ''}${u.department || '-'} (${u.phone || '-'})</div>
+        </button>
+      `).join('');
+      const rect = inputEl.getBoundingClientRect();
+      let left = rect.left;
+      if (left + 288 > window.innerWidth - 12) left = Math.max(12, window.innerWidth - 300);
+      pop.style.left = `${left}px`;
+      pop.style.top = `${rect.bottom + 4}px`;
+      pop.classList.remove('hidden');
+    }
+
+    function pickWorkerFromUsers(userId) {
+      const u = usersDb.find(item => item.id === userId);
+      const pop = document.getElementById('worker-suggest-popover');
+      if (!u || !activeWorkerSuggestInput) {
+        if (pop) pop.classList.add('hidden');
+        return;
+      }
+      const tr = activeWorkerSuggestInput.closest('tr');
+      if (tr) {
+        const nEl = tr.querySelector('.worker-name');
+        const dEl = tr.querySelector('.worker-dept');
+        const pEl = tr.querySelector('.worker-phone');
+        if (nEl) nEl.value = `${u.firstName} ${u.lastName}`;
+        if (dEl) dEl.value = u.department || '';
+        if (pEl) pEl.value = u.phone || '';
+      }
+      if (pop) pop.classList.add('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const supWrap = document.getElementById('supervisor-autocomplete-wrap');
+      const supBox = document.getElementById('supervisor-suggest-box');
+      if (supWrap && supBox && !supBox.classList.contains('hidden') && !supWrap.contains(e.target)) {
+        supBox.classList.add('hidden');
+      }
+      const wPop = document.getElementById('worker-suggest-popover');
+      if (wPop && !wPop.classList.contains('hidden') && !wPop.contains(e.target) && e.target !== activeWorkerSuggestInput) {
+        wPop.classList.add('hidden');
+      }
+    });
+
     function onSupervisorNameAutoFill() {
       const typedName = (document.getElementById('supervisorName')?.value || '').trim();
       if (!typedName) return;
@@ -3689,6 +4032,10 @@
       document.getElementById('substationZone').value = 'ก3';
       document.getElementById('peaGff').value = 'กฟก.3';
       init24HourTimeSelectors();
+      const hId = document.getElementById('requestApproverTargetUserId');
+      const hBadge = document.getElementById('req-approver-match-badge');
+      if (hId) hId.value = '';
+      if (hBadge) hBadge.classList.add('hidden');
       if (currentUser) {
         refreshCurrentUserHeaderAndRequestFields();
       }
@@ -3923,7 +4270,7 @@
       refreshCurrentUserHeaderAndRequestFields();
 
       const allowedTabs = ROLE_ALLOWED_TABS[currentUser.role] || ['dashboard', 'request', 'status', 'document'];
-      const allTabs = ['request', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin'];
+      const allTabs = ['request', 'req_approver', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin'];
       allTabs.forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
         if (!btn) return;
@@ -3935,6 +4282,8 @@
       updateCounters();
       updatePendingUsersBadge();
       renderNotifications();
+      renderRequestApproverQueue();
+      renderRequestApproverQueue();
       renderVerifierQueue();
       renderApproverQueue();
       renderStatusTracker();
@@ -3942,13 +4291,13 @@
       renderScheduleOverrides();
       if (currentUser.role === 'admin') renderAdminConsole();
 
-      const defaultTab = currentUser.role === 'approver' ? 'approver' : (currentUser.role === 'verifier' || currentUser.role === 'dispatch_verifier') ? 'verifier' : 'request';
+      const defaultTab = currentUser.role === 'approver' ? 'approver' : currentUser.role === 'request_approver' ? 'req_approver' : (currentUser.role === 'verifier' || currentUser.role === 'dispatch_verifier') ? 'verifier' : 'request';
       switchTab(defaultTab);
     }
 
     function returnToRoleHomeTab() {
       if (!currentUser) return;
-      const defaultTab = currentUser.role === 'approver' ? 'approver' : (currentUser.role === 'verifier' || currentUser.role === 'dispatch_verifier') ? 'verifier' : 'request';
+      const defaultTab = currentUser.role === 'approver' ? 'approver' : currentUser.role === 'request_approver' ? 'req_approver' : (currentUser.role === 'verifier' || currentUser.role === 'dispatch_verifier') ? 'verifier' : 'request';
       switchTab(defaultTab);
     }
 
@@ -3961,7 +4310,7 @@
         }
       }
 
-      const allViews = ['dashboard', 'request', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin'];
+      const allViews = ['dashboard', 'request', 'req_approver', 'verifier', 'approver', 'status', 'document', 'schedule', 'admin'];
       allViews.forEach(t => {
         const viewEl = document.getElementById(`view-${t}`);
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -3981,6 +4330,7 @@
       }
 
       if (tabName === 'request') refreshPermitNumberPreview();
+      if (tabName === 'req_approver') renderRequestApproverQueue();
       if (tabName === 'dashboard') renderDashboard();
       if (tabName === 'document') {
         renderDocCardsList();
@@ -4538,7 +4888,7 @@
         equipment: document.getElementById('equipment').value.trim() || '-',
         requesterUserId: currentUser.id,
         requesterFullName: document.getElementById('requesterFullName').value.trim(),
-        requesterPosition: document.getElementById('requesterPosition').value.trim() || 'พนักงาน กฟภ.',
+        requesterPosition: document.getElementById('requesterPosition').value.trim() || (currentUser && currentUser.position) || '',
         requesterDept: document.getElementById('requesterDept').value.trim(),
         requesterPhone: document.getElementById('requesterPhone').value.trim(),
         requesterEmail: document.getElementById('requesterEmail').value.trim(),
@@ -4574,19 +4924,24 @@
         isEmergency: isEmergencyReq,
         isAfterHours: isAfterHoursNow,
         assignedVerifierUnit,
-        status: autoSign ? 'VERIFIED_PENDING_APPROVER' : 'PENDING_VERIFIER',
-        verifierDecision: autoSign ? 'APPROVE' : '',
+        requestApproverUserId: document.getElementById('requestApproverTargetUserId')?.value || '',
+        requestApproverSigned: false,
+        requestApproverSignedDate: '',
+        requestApproverRejectReason: '',
+        canAutoVerifyAfterHead: autoSign,
+        status: 'PENDING_REQUEST_APPROVER',
+        verifierDecision: '',
         verifierRejectReason: '',
         controlMode: res.staffArrange === 'ไม่จัดพนักงาน'
           ? 'รูปแบบที่ 2: ควบคุมทางไกลผ่านระบบ Unmanned Security / SSMS'
           : 'รูปแบบที่ 1: เดินทางไปควบคุมที่สถานีไฟฟ้า',
         emergencyAuthority: 'หผ.จฟ.1 (ในเวลาราชการ)',
-        verifierUserId: autoSign ? autoVerifier.id : '',
-        verifierName: autoSign ? autoVerifierFullName : '',
-        verifierPosition: autoSign ? 'หผ.จฟ.1 กปบ.(ก3)' : '',
-        verifierSigned: autoSign,
-        verifierSignedDate: autoSign ? now.shortDate : '',
-        verifierAutoSigned: autoSign,
+        verifierUserId: '',
+        verifierName: '',
+        verifierPosition: '',
+        verifierSigned: false,
+        verifierSignedDate: '',
+        verifierAutoSigned: false,
         verifierAdditionalNotes: '',
         approverName: 'นายศุภโชค นาคราช',
         approverPosition: 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)',
@@ -4594,14 +4949,9 @@
         approverSignedDate: '',
         driveStorage: null,
         workReport: null,
-        dispatchLogs: autoSign
-          ? [
-              { time: now.fullDateTime, to: `${autoVerifierFullName} (หผ.จฟ.1)`, detail: `ผ่านเงื่อนไขตรวจสอบอัตโนมัติ ระบบประทับลายเซ็น หผ.จฟ.1 (${generated.permitNo})` },
-              { time: now.fullDateTime, to: 'ผู้อนุมัติ กปบ.(ก3)', detail: 'ส่งเอกสารที่ผ่านการตรวจสอบแล้วเพื่อพิจารณาอนุมัติ' }
-            ]
-          : [
-              { time: now.fullDateTime, to: 'ผู้ตรวจสอบ ผจฟ.1 กปบ.(ก3)', detail: `ยื่นคำขอ ${generated.permitNo} เข้าสู่คิวผู้ตรวจสอบพิจารณา (${internalVerifierNote})` }
-            ]
+        dispatchLogs: [
+          { time: now.fullDateTime, to: 'ผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป)', detail: `ผู้ร่าง (${document.getElementById('requesterFullName').value.trim()}) ยื่นคำขอ ${generated.permitNo} เข้าสู่คิวรอ หผ. พิจารณาลงนามส่วนที่ 1` }
+        ]
       };
 
       if (res.scheduleOverride) {
@@ -4646,9 +4996,198 @@
 
       showToast(`ยื่นคำขอ ${newPermit.permitNo} เรียบร้อยแล้ว`, 'success');
       const allowed = ROLE_ALLOWED_TABS[currentUser.role] || [];
-      if (autoSign && allowed.includes('approver')) switchTab('approver');
-      else if (!autoSign && allowed.includes('verifier')) switchTab('verifier');
+      if (allowed.includes('req_approver')) switchTab('req_approver');
       else switchTab('status');
+    }
+
+    // =========================================================================
+    // 6.5 หน้าผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป — ลงนามส่วนที่ 1)
+    // =========================================================================
+    function renderRequestApproverQueue() {
+      const container = document.getElementById('req-approver-list');
+      if (!container) return;
+      const fVal = document.getElementById('req-approver-status-filter')?.value || 'PENDING_REQUEST_APPROVER';
+      const list = permits.filter(p => {
+        if (fVal === 'PENDING_REQUEST_APPROVER') return p.status === 'PENDING_REQUEST_APPROVER';
+        if (fVal === 'DONE') return p.status !== 'PENDING_REQUEST_APPROVER';
+        return true;
+      });
+      const isAdminUser = currentUser && currentUser.role === 'admin';
+      const isHeadRole = currentUser && currentUser.role === 'request_approver';
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm">ไม่มีรายการคำขอ Work Permit ที่รอ หผ. พิจารณาจัดทำคำขอในขณะนี้</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(p => {
+        const isPending = p.status === 'PENDING_REQUEST_APPROVER';
+        const isEmergencyPermit = !!p.isEmergency || (p.workCategory || '').includes('ฉุกเฉิน');
+        const hasDesignatedHead = !!p.requestApproverUserId;
+        const isDesignatedHead = !hasDesignatedHead || (currentUser && p.requestApproverUserId === currentUser.id);
+        const canHeadApproveThis = isAdminUser || (isHeadRole && isDesignatedHead);
+        let badge = isPending
+          ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-300">รอ หผ. อนุมัติจัดทำคำขอ</span>`
+          : p.status === 'REJECTED'
+            ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">ไม่อนุมัติ / ส่งกลับ</span>`
+            : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">✓ อนุมัติจัดทำคำขอแล้ว (${p.requestApproverName || '-'})</span>`;
+
+        return `
+          <div class="bg-white rounded-2xl p-5 shadow-sm border ${isPending ? 'border-fuchsia-300' : 'border-slate-200'} space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-pea-dark text-base">${p.permitNo}</span>
+                <span class="px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-purple-100 text-pea-purple">สฟ.${p.station}</span>
+                <span class="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-700">${p.substationMode || 'Unmanned Substation'}</span>
+                ${isEmergencyPermit ? `<span class="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-600 text-white">🚨 งานฉุกเฉิน</span>` : ''}
+              </div>
+              ${badge}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+              <div>
+                <p class="text-slate-500 text-xs">วัน-เวลาที่ขอปฏิบัติงาน</p>
+                <p class="font-semibold text-slate-800">${formatThaiDate(p.startDate)} - ${formatThaiDate(p.endDate)} (${p.startTime}-${p.endTime} น.)</p>
+                <p class="text-xs text-slate-500 mt-0.5">${p.workCategory} • ${p.outageMode}</p>
+              </div>
+              <div>
+                <p class="text-slate-500 text-xs">รายละเอียดงาน & ผู้เข้าปฏิบัติงาน</p>
+                <p class="font-semibold text-slate-800">${p.workTitle}</p>
+                <p class="text-xs text-slate-500 mt-0.5">ผู้ปฏิบัติงาน ${(p.workersList || []).length || p.workersTotal || 1} คน • ผู้ควบคุมงาน: ${p.supervisorName}</p>
+              </div>
+              <div>
+                <p class="text-slate-500 text-xs">ผู้ร่างคำขออนุญาต</p>
+                <p class="font-semibold text-slate-800">${p.requesterFullName}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${p.requesterPosition || ''} • ${p.requesterDept || p.orgName}</p>
+              </div>
+            </div>
+
+            ${isPending && isHeadRole && !canHeadApproveThis ? `
+              <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900 font-medium">
+                🔒 คำขอนี้ระบุผู้ลงนามเฉพาะ: <strong>${p.requestApproverName || 'ผู้อนุมัติจัดทำคำขอที่เลือกไว้'}</strong> — สิทธิ์การกดอนุมัติล็อคไว้เฉพาะบุคคลดังกล่าวและ User Admin เท่านั้น
+              </div>
+            ` : ''}
+
+            ${isPending && canHeadApproveThis ? `
+              <div class="bg-fuchsia-50/50 p-4 rounded-xl border border-fuchsia-200 space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุ / เหตุผล (กรณีส่งกลับให้ผู้ร่างแก้ไข)</label>
+                  <input type="text" id="req-approver-note-${p.id}" placeholder="ระบุความเห็นเพิ่มเติม (ถ้ามี)..." class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs sm:text-sm bg-white">
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <button type="button" onclick="openDocumentPreview('${p.id}')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">ตรวจสอบร่าง PDF</button>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="requestApproverReject('${p.id}')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 transition flex items-center gap-1.5">
+                      <i data-lucide="x-circle" class="w-4 h-4"></i>
+                      <span>ไม่อนุมัติ / ส่งกลับให้ผู้ร่าง</span>
+                    </button>
+                    <button type="button" onclick="requestApproverApprove('${p.id}')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-fuchsia-700 to-pea-dark hover:from-fuchsia-800 hover:to-pea-purple text-white shadow transition flex items-center gap-1.5">
+                      <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                      <span>อนุมัติจัดทำคำขอ & ลงนาม (${currentUser.firstName} ${currentUser.lastName}) ส่งต่อ กปบ.</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : `
+              <div class="flex items-center justify-between pt-2 text-xs text-slate-500">
+                <span>${p.requestApproverSigned ? `ลงนามส่วนที่ 1 เมื่อ ${p.requestApproverSignedDate}` : ''}</span>
+                <button type="button" onclick="openDocumentPreview('${p.id}')" class="text-pea-purple hover:underline font-semibold">ดูใบอนุญาตทำงาน</button>
+              </div>
+            `}
+          </div>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function requestApproverApprove(id) {
+      if (!currentUser || !['request_approver', 'admin'].includes(currentUser.role)) {
+        showToast('เฉพาะผู้อนุมัติจัดทำคำขออนุญาต (ระดับ หผ. ขึ้นไป) เท่านั้นที่ลงนามได้', 'error');
+        return;
+      }
+      const p = permits.find(item => item.id === id);
+      if (!p) return;
+      if (currentUser.role !== 'admin' && p.requestApproverUserId && p.requestApproverUserId !== currentUser.id) {
+        showToast(`คำขอนี้ล็อคสิทธิ์ลงนามไว้เฉพาะ ${p.requestApproverName || 'หผ. ที่ระบุ'} และ Admin เท่านั้น`, 'error');
+        return;
+      }
+      const now = getCurrentThaiDateTime();
+      const headFullName = `${currentUser.firstName} ${currentUser.lastName}`;
+      const note = document.getElementById(`req-approver-note-${id}`)?.value.trim() || '';
+
+      p.requestApproverUserId = currentUser.id;
+      p.requestApproverName = headFullName;
+      p.requestApproverPosition = currentUser.position || '';
+      p.requestApproverDept = currentUser.department || '';
+      p.requestApproverSigned = true;
+      p.requestApproverSignedDate = now.shortDate;
+      p.requestApproverRejectReason = '';
+
+      const isEmergencyPermit = !!p.isEmergency || (p.workCategory || '').includes('ฉุกเฉิน');
+      const shouldAutoVerify = !!p.canAutoVerifyAfterHead && !isEmergencyPermit;
+
+      if (shouldAutoVerify) {
+        const autoVerifier = usersDb.find(u => u.id === 'USR-PANUPONG') || { id: 'USR-PANUPONG', firstName: 'ภานุพงศ์', lastName: 'เจนสุริยะกุล', position: 'หผ.จฟ.1 กปบ.(ก3)' };
+        const autoVerName = `นาย${autoVerifier.firstName} ${autoVerifier.lastName}`.replace(/^นายนาย/, 'นาย');
+        p.status = 'VERIFIED_PENDING_APPROVER';
+        p.verifierUserId = autoVerifier.id;
+        p.verifierName = autoVerName;
+        p.verifierPosition = autoVerifier.position || 'หผ.จฟ.1 กปบ.(ก3)';
+        p.verifierSigned = true;
+        p.verifierSignedDate = now.shortDate;
+        p.verifierAutoSigned = true;
+        p.verifierDecision = 'APPROVE';
+        p.dispatchLogs.push(
+          { time: now.fullDateTime, to: 'กปบ.(ก3)', detail: `ผู้อนุมัติจัดทำคำขอ (${headFullName}) ลงนามส่วนที่ 1 แล้ว${note ? ' — ' + note : ''}` },
+          { time: now.fullDateTime, to: 'ผู้อนุมัติ กปบ.(ก3)', detail: `ผ่านเงื่อนไขตรวจสอบอัตโนมัติ ส่งต่อผู้อนุมัติ กปบ.(ก3)` }
+        );
+      } else {
+        p.status = 'PENDING_VERIFIER';
+        p.dispatchLogs.push({
+          time: now.fullDateTime,
+          to: isEmergencyPermit ? 'ผู้ตรวจสอบ (ผจฟ.1 / ศูนย์ควบคุมการจ่ายไฟเขต)' : 'ผู้ตรวจสอบ ผจฟ.1 กปบ.(ก3)',
+          detail: `ผู้อนุมัติจัดทำคำขอ (${headFullName}) ลงนามส่วนที่ 1 แล้ว ส่งเข้าคิวผู้ตรวจสอบพิจารณา${note ? ' — ' + note : ''}`
+        });
+      }
+
+      saveAllToLocalStorage();
+      updateCounters();
+      renderNotifications();
+      renderRequestApproverQueue();
+      renderVerifierQueue();
+      renderApproverQueue();
+      renderStatusTracker();
+      renderDocCardsList(p.id);
+      renderPermitDocument();
+      dispatchExternalNotification(`หผ. อนุมัติจัดทำคำขอแล้ว (${headFullName})`, p, note);
+      showToast(`ลงนามอนุมัติจัดทำคำขอ ${p.permitNo} และส่งต่อ กปบ. เรียบร้อยแล้ว!`, 'success');
+    }
+
+    function requestApproverReject(id) {
+      if (!currentUser || !['request_approver', 'admin'].includes(currentUser.role)) return;
+      const p = permits.find(item => item.id === id);
+      if (!p) return;
+      if (currentUser.role !== 'admin' && p.requestApproverUserId && p.requestApproverUserId !== currentUser.id) {
+        showToast(`คำขอนี้ล็อคสิทธิ์ไว้เฉพาะ ${p.requestApproverName || 'หผ. ที่ระบุ'} และ Admin เท่านั้น`, 'error');
+        return;
+      }
+      const now = getCurrentThaiDateTime();
+      const headFullName = `${currentUser.firstName} ${currentUser.lastName}`;
+      const reason = document.getElementById(`req-approver-note-${id}`)?.value.trim() || 'กรุณาตรวจสอบรายละเอียดคำขอและยื่นใหม่';
+      p.requestApproverRejectReason = reason;
+      p.status = 'REJECTED';
+      p.dispatchLogs.push({
+        time: now.fullDateTime,
+        to: p.requesterFullName || 'ผู้ร่างคำขอ',
+        detail: `ผู้อนุมัติจัดทำคำขอ (${headFullName}) ส่งกลับคำขอ: ${reason}`
+      });
+
+      saveAllToLocalStorage();
+      updateCounters();
+      renderNotifications();
+      renderRequestApproverQueue();
+      renderStatusTracker();
+      showToast(`ส่งกลับคำขอ ${p.permitNo} ให้ผู้ร่างแก้ไขแล้ว`, 'warning');
     }
 
     // =========================================================================
@@ -4660,6 +5199,7 @@
       const filterEl = document.getElementById('verifier-status-filter');
       const fVal = filterEl ? filterEl.value : 'ALL';
       const list = permits.filter(p => {
+        if (p.status === 'PENDING_REQUEST_APPROVER') return false;
         if (fVal === 'PENDING_VERIFIER') return p.status === 'PENDING_VERIFIER';
         if (fVal === 'DONE') return p.status !== 'PENDING_VERIFIER';
         return true;
@@ -4846,7 +5386,7 @@
       p.verifierRejectReason = '';
       p.verifierUserId = currentUser.id;
       p.verifierName = signerName;
-      p.verifierPosition = currentUser.position || currentUser.department || 'ผจฟ.1 กปบ.(ก3)';
+      p.verifierPosition = currentUser.position || '';
       p.verifierSigned = true;
       p.verifierSignedDate = now.shortDate;
       p.verifierAutoSigned = false;
@@ -5012,13 +5552,10 @@
       const p = permits.find(item => item.id === id);
       if (!p) return;
       const now = getCurrentThaiDateTime();
-      const approverFullName = currentUser.role === 'approver'
-        ? `${currentUser.firstName} ${currentUser.lastName}`
-        : 'นายศุภโชค นาคราช';
-
-      p.approverUserId = currentUser.role === 'approver' ? currentUser.id : 'USR-SUPACHOK';
+      const approverFullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
+      p.approverUserId = currentUser.id;
       p.approverName = approverFullName;
-      p.approverPosition = currentUser.role === 'approver' ? (currentUser.position || currentUser.department) : 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)';
+      p.approverPosition = currentUser.position || '';
       p.approverSigned = true;
       p.approverSignedDate = now.shortDate;
       p.status = 'APPROVED';
@@ -5666,8 +6203,8 @@
       const now = getCurrentThaiDateTime();
       p.workReport.kpbSignerUserId = currentUser.id;
       p.workReport.kpbSignerName = `${currentUser.firstName} ${currentUser.lastName}`;
-      p.workReport.kpbSignerPosition = currentUser.position || currentUser.department || 'หน่วยปฏิบัติงาน / พนักงานสถานีไฟฟ้า';
-      p.workReport.kpbSignerDept = 'ผจฟ.1 กปบ.(ก3)';
+      p.workReport.kpbSignerPosition = currentUser.position || '';
+      p.workReport.kpbSignerDept = currentUser.department || '';
       p.workReport.kpbSignedDate = now.shortDate;
       p.dispatchLogs.push({
         time: now.fullDateTime,
@@ -5687,9 +6224,15 @@
       const existing = p.workReport;
       const canReport = currentUser && ['requester', 'station_staff', 'verifier', 'dispatch_verifier', 'admin'].includes(currentUser.role);
       const canKpbSign = currentUser && ['station_staff', 'verifier', 'dispatch_verifier', 'admin'].includes(currentUser.role);
+      const repUserObj = existing && existing.reporterUserId ? usersDb.find(u => u.id === existing.reporterUserId) : currentUser;
+      const legacySwappedPos = !!(existing && !existing.reporterDept && repUserObj && existing.reporterPosition === repUserObj.department);
       const defaultReporterName = existing ? existing.reporterName : (p.supervisorName || (currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : ''));
-      const defaultReporterPos = existing ? existing.reporterPosition : ((currentUser && currentUser.position) || p.supervisorPosition || 'ผู้ควบคุมงาน');
-      const defaultReporterDept = existing ? existing.reporterDept : (p.orgName || (currentUser ? currentUser.department : ''));
+      const defaultReporterPos = existing
+        ? (legacySwappedPos ? (repUserObj.position || p.supervisorPosition || '') : (existing.reporterPosition || (repUserObj && repUserObj.position) || ''))
+        : ((currentUser && currentUser.position) || p.supervisorPosition || '');
+      const defaultReporterDept = existing
+        ? (existing.reporterDept || (repUserObj && repUserObj.department) || p.orgName || '')
+        : (p.orgName || (currentUser ? currentUser.department : ''));
 
       // SLA 7 วัน นับถัดจากวันที่ปฏิบัติงานแล้วเสร็จ (ข้อ 1.10)
       let sla7Html = '';
@@ -5942,6 +6485,11 @@
       const fillL = (val, minW = 70) => `<span class="permit-fill-left" style="min-width:${minW}px">${val || '&nbsp;'}</span>`;
 
       const reqSigHtml = getUserSignatureHtml(p.requesterUserId, p.requesterFullName || p.supervisorName, '');
+      const headSigHtml = p.requestApproverSigned ? getUserSignatureHtml(p.requestApproverUserId, p.requestApproverName, '') : '';
+      const headUserObj = p.requestApproverUserId ? usersDb.find(u => u.id === p.requestApproverUserId) : null;
+      const displayHeadPos = (headUserObj && headUserObj.position) ? headUserObj.position : (p.requestApproverPosition || '');
+      const displayHeadDept = (headUserObj && headUserObj.department) ? headUserObj.department : (p.requestApproverDept || '');
+      const displayHeadDate = p.requestApproverSignedDate || reqDateSlash;
       const verSigHtml = getUserSignatureHtml(p.verifierUserId, p.verifierName, 'M15 26 C28 8, 46 28, 60 18 C75 8, 92 30, 118 16');
       const appSigHtml = getUserSignatureHtml(p.approverUserId, p.approverName, 'M15 30 C30 8, 52 8, 42 28 C35 40, 68 15, 85 22 C98 28, 112 12, 135 18');
 
@@ -5978,7 +6526,47 @@
       }
 
       // หน้า 2: ตารางพัสดุ/อุปกรณ์ เข้า-ออก 7 แถว
+      // ดึงตำแหน่งจาก user.position และดึงสังกัดจาก user.department อย่างชัดเจนทุกส่วน
+      const reqUserObj = p.requesterUserId ? usersDb.find(u => u.id === p.requesterUserId) : null;
+      const displayReqPos = (reqUserObj && reqUserObj.position) ? reqUserObj.position : ((p.requesterPosition && p.requesterPosition !== p.requesterDept) ? p.requesterPosition : '');
+      const displayReqDept = (reqUserObj && reqUserObj.department) ? reqUserObj.department : (p.requesterDept || '');
+
+      const verUserObj = p.verifierUserId ? usersDb.find(u => u.id === p.verifierUserId) : null;
+      const displayVerPos = (verUserObj && verUserObj.position) ? verUserObj.position : (p.verifierPosition || '');
+
+      const appUserObj = (p.approverSigned && p.approverUserId) ? usersDb.find(u => u.id === p.approverUserId) : null;
+      const displayAppName = p.approverSigned
+        ? (appUserObj ? `${appUserObj.firstName} ${appUserObj.lastName}`.trim() : (p.approverName || '...................................'))
+        : '...................................';
+      const displayAppPos = p.approverSigned
+        ? ((appUserObj && appUserObj.position) ? appUserObj.position : (p.approverPosition || '...........................'))
+        : '...........................';
+
       const wr = p.workReport;
+      const wrRepUser = (wr && wr.reporterUserId) ? usersDb.find(u => u.id === wr.reporterUserId) : null;
+      const wrLegacySwapped = !!(wr && !wr.reporterDept && wrRepUser && wr.reporterPosition === wrRepUser.department);
+      const displayWrRepPos = wr
+        ? ((wrRepUser && wrRepUser.position) ? wrRepUser.position : (wrLegacySwapped ? '' : (wr.reporterPosition || '')))
+        : '';
+      const displayWrRepDept = wr
+        ? ((wrRepUser && wrRepUser.department) ? wrRepUser.department : (wr.reporterDept || ''))
+        : '';
+      let displayWrRepDate = '........./........./.........';
+      if (wr) {
+        if (wr.reportedDateShort) {
+          displayWrRepDate = wr.reportedDateShort;
+        } else if (wr.reportedAt) {
+          const mDate = String(wr.reportedAt).match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+          displayWrRepDate = mDate ? mDate[1] : String(wr.reportedAt).split(' ')[0];
+        }
+      }
+      const wrKpbUser = (wr && wr.kpbSignerUserId) ? usersDb.find(u => u.id === wr.kpbSignerUserId) : null;
+      const displayWrKpbPos = wr
+        ? ((wrKpbUser && wrKpbUser.position) ? wrKpbUser.position : ((wr.kpbSignerPosition && wr.kpbSignerPosition !== wr.kpbSignerDept) ? wr.kpbSignerPosition : ''))
+        : '';
+      const displayWrKpbDept = wr
+        ? ((wrKpbUser && wrKpbUser.department) ? wrKpbUser.department : (wr.kpbSignerDept || ''))
+        : '';
       const mats = (wr && wr.hasMaterials && Array.isArray(wr.materials)) ? wr.materials : [];
       const matRowCount = Math.max(7, Math.min(mats.length, 9));
       let matRowsHtml = '';
@@ -6181,16 +6769,16 @@
                     <div class="h-[28px] flex items-center justify-center">${reqSigHtml}</div>
                     <div>ลงชื่อ ....................................................</div>
                     <div>( ${p.requesterFullName || '............................................'} )</div>
-                    <div>ตำแหน่ง ${fill(p.requesterPosition, 100)} สังกัด ${fill(p.requesterDept, 90)}</div>
+                    <div>ตำแหน่ง ${fill(displayReqPos, 100)} สังกัด ${fill(displayReqDept, 90)}</div>
                     <div>( ${reqDateSlash} )</div>
                   </div>
                   <div class="text-center">
                     <div class="font-bold">ผู้อนุมัติจัดทำคำขออนุญาต</div>
-                    <div class="h-[28px] flex items-center justify-center"></div>
+                    <div class="h-[28px] flex items-center justify-center">${headSigHtml}</div>
                     <div>ลงชื่อ ....................................................</div>
                     <div>( ${p.requestApproverName || '............................................'} )</div>
-                    <div>ตำแหน่ง ${fill(p.requestApproverPosition, 100)} สังกัด ${fill(p.requestApproverDept, 90)}</div>
-                    <div>( ${reqDateSlash} )</div>
+                    <div>ตำแหน่ง ${fill(displayHeadPos, 100)} สังกัด ${fill(displayHeadDept, 90)}</div>
+                    <div>( ${p.requestApproverSigned ? displayHeadDate : '........./........./.........'} )</div>
                   </div>
                 </div>
               </div>
@@ -6217,7 +6805,7 @@
                       <div class="h-[24px] flex items-center justify-center">${p.verifierSigned && !p.verifierAutoSigned ? verSigHtml : ''}</div>
                       <div>ลงชื่อ .......................................</div>
                       <div>( ${p.verifierSigned && !p.verifierAutoSigned ? p.verifierName : '...................................'} )</div>
-                      <div>ตำแหน่ง ${p.verifierSigned && !p.verifierAutoSigned ? p.verifierPosition : '...........................'}</div>
+                      <div>ตำแหน่ง ${p.verifierSigned && !p.verifierAutoSigned ? (displayVerPos || '...........................') : '...........................'}</div>
                     </div>
                   </div>
 
@@ -6232,7 +6820,7 @@
                       <div class="h-[28px] flex items-center justify-center">${p.verifierSigned ? verSigHtml : ''}</div>
                       <div>ลงชื่อ .......................................</div>
                       <div>( ${p.verifierSigned ? p.verifierName : 'นายภานุพงศ์ เจนสุริยะกุล'} )</div>
-                      <div>ตำแหน่ง ${p.verifierSigned ? p.verifierPosition : 'หผ.จฟ.1 กปบ.(ก3)'}</div>
+                      <div>ตำแหน่ง ${p.verifierSigned ? (displayVerPos || 'หผ.จฟ.1 กปบ.(ก3)') : 'หผ.จฟ.1 กปบ.(ก3)'}</div>
                     </div>
                   </div>
 
@@ -6245,8 +6833,8 @@
                     <div class="pt-1">
                       <div class="h-[28px] flex items-center justify-center">${p.approverSigned ? appSigHtml : ''}</div>
                       <div>ลงชื่อ .......................................</div>
-                      <div>( ${p.approverName || 'นายศุภโชค นาคราช'} )</div>
-                      <div>ตำแหน่ง ${p.approverPosition || 'ชก.ปบ.(ก3) ปฏิบัติงานแทน อก.ปบ.(ก3)'}</div>
+                      <div>( ${displayAppName} )</div>
+                      <div>ตำแหน่ง ${displayAppPos}</div>
                     </div>
                   </div>
                 </div>
@@ -6311,7 +6899,7 @@
                     </div>
                     <div>ลงชื่อ ....................................................</div>
                     <div>( ${wr && wr.kpbSignerName ? wr.kpbSignerName : '..................................................'} )</div>
-                    <div>ตำแหน่ง ${fill(wr ? wr.kpbSignerPosition : '', 105)} สังกัด ${fill(wr ? wr.kpbSignerDept : '', 95)}</div>
+                    <div>ตำแหน่ง ${fill(displayWrKpbPos, 105)} สังกัด ${fill(displayWrKpbDept, 95)}</div>
                     <div>( ${wr && wr.kpbSignedDate ? wr.kpbSignedDate : '........./........./.........'} )</div>
                     <div class="font-semibold pt-0.5">หน่วยปฏิบัติงาน / พนักงานสถานีไฟฟ้า</div>
                   </div>
@@ -6323,8 +6911,8 @@
                     </div>
                     <div>ลงชื่อ ....................................................</div>
                     <div>( ${wr && wr.reporterName ? wr.reporterName : '..................................................'} )</div>
-                    <div>ตำแหน่ง ${fill(wr ? wr.reporterPosition : '', 105)} สังกัด ${fill(wr ? wr.reporterDept : '', 95)}</div>
-                    <div>( ${wr && wr.reportedDateShort ? wr.reportedDateShort : '........./........./.........'} )</div>
+                    <div>ตำแหน่ง ${fill(displayWrRepPos, 105)} สังกัด ${fill(displayWrRepDept, 95)}</div>
+                    <div>( ${displayWrRepDate} )</div>
                     <div class="font-semibold pt-0.5">ผู้ควบคุมงาน / ผู้ขออนุญาต</div>
                   </div>
                 </div>
@@ -6894,7 +7482,8 @@
             <td class="p-3">
               <select id="adm-role-${u.id}" class="rounded-lg border border-slate-300 px-2 py-1 text-xs bg-white font-medium">
                 <option value="station_staff" ${u.role === 'station_staff' ? 'selected' : ''}>พนักงานสถานี (ดูใบอนุมัติ/สิทธิ์เท่าผู้ขอ)</option>
-                <option value="requester" ${u.role === 'requester' ? 'selected' : ''}>ผู้ขออนุญาต (แท็บ 1,4,5)</option>
+                <option value="requester" ${u.role === 'requester' ? 'selected' : ''}>ผู้ขออนุญาต (ผู้ร่างคำขอ)</option>
+                <option value="request_approver" ${u.role === 'request_approver' ? 'selected' : ''}>ผู้อนุมัติจัดทำคำขอ (ระดับ หผ. ขึ้นไป)</option>
                 <option value="verifier" ${u.role === 'verifier' ? 'selected' : ''}>ผู้ตรวจสอบ ผจฟ.1</option>
                 <option value="dispatch_verifier" ${u.role === 'dispatch_verifier' ? 'selected' : ''}>ผู้ตรวจสอบ ศูนย์ฯ จ่ายไฟ (ฉุกเฉิน)</option>
                 <option value="approver" ${u.role === 'approver' ? 'selected' : ''}>ผู้อนุมัติ กปบ.(ก3) (แท็บ 3-5)</option>
@@ -7136,10 +7725,15 @@
     }
 
     function updateCounters() {
+      const rCount = permits.filter(p => p.status === 'PENDING_REQUEST_APPROVER').length;
       const vCount = permits.filter(p => p.status === 'PENDING_VERIFIER').length;
       const aCount = permits.filter(p => p.status === 'VERIFIED_PENDING_APPROVER').length;
       const okCount = permits.filter(p => p.status === 'APPROVED').length;
 
+      const bReq = document.getElementById('badge-req-approver-count');
+      const nReq = document.getElementById('nav-count-req-approver');
+      if (bReq) bReq.textContent = rCount;
+      if (nReq) nReq.textContent = rCount;
       document.getElementById('badge-verifier-count').textContent = vCount;
       document.getElementById('badge-approver-count').textContent = aCount;
       document.getElementById('badge-approved-count').textContent = okCount;
