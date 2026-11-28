@@ -387,6 +387,46 @@
     </div>
   </div>
 
+
+  <!-- ======================================================================= -->
+  <!-- MODAL ส่งแจ้งเตือนผ่าน LINE (1 คลิก — ฟรีไม่จำกัดโควตา) สำหรับทุกขั้นตอน -->
+  <!-- ======================================================================= -->
+  <div id="line-share-modal" class="hidden fixed inset-0 z-[9999] bg-slate-900/65 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl shadow-2xl border border-emerald-200 max-w-lg w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-5 py-4 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-base flex items-center gap-2">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            <span>ส่งต่อแจ้งเตือนทาง LINE ไปยังขั้นตอนถัดไป</span>
+          </h3>
+          <p id="line-share-subtitle" class="text-xs text-emerald-100 mt-0.5">เลือกห้องแชตหรือกลุ่ม LINE ที่ต้องการส่งต่อได้ทันที</p>
+        </div>
+        <button type="button" onclick="closeLineShareModal()" class="p-1.5 rounded-lg hover:bg-white/20 text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">ข้อความแจ้งเตือน (สามารถแก้ไขเพิ่มเติมก่อนส่งได้)</label>
+          <textarea id="line-share-text" rows="7" class="w-full rounded-2xl border border-slate-300 bg-slate-50 p-3 text-xs sm:text-sm text-slate-800 leading-relaxed focus:bg-white focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button type="button" onclick="triggerLineShareUrl()" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow flex items-center justify-center gap-2 transition">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>เปิด LINE ส่งเข้ากลุ่ม / แชต</span>
+          </button>
+          <button type="button" onclick="copyLineShareMessage()" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>คัดลอกข้อความ (วาง LINE PC)</span>
+          </button>
+        </div>
+        <div class="flex justify-end pt-1">
+          <button type="button" onclick="closeLineShareModal()" class="text-xs text-slate-500 hover:text-slate-800 px-3 py-1 rounded-lg hover:bg-slate-100">ปิดหน้าต่างนี้</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ======================================================================= -->
   <!-- MODAL หลักเกณฑ์การอนุญาตเข้าปฏิบัติงานภายในสถานีไฟฟ้า ปี 2569 -->
   <!-- ======================================================================= -->
@@ -1514,10 +1554,16 @@
               <p class="text-xs text-slate-500">
                 * เมื่อกดยื่นคำขอ ระบบจะสร้างเอกสาร Substation Area Work Permit 2 หน้า ตามฉบับปรับปรุงครั้งที่ 2 ปี 2569 และส่งเข้าสู่คิวพิจารณาของ ผจฟ.1 กปบ.(ก3)
               </p>
-              <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-pea-purple to-pea-dark hover:from-pea-dark hover:to-pea-purple text-white font-semibold text-sm shadow-lg shadow-purple-200 transition flex items-center justify-center gap-2">
-                <i data-lucide="send" class="w-4 h-4"></i>
-                <span>ยื่นคำขอ Substation Area Work Permit</span>
-              </button>
+              <div class="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                <button type="button" onclick="openLineShareFromCurrentRequestForm()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i>
+                  <span>ส่งแจ้งผ่าน LINE</span>
+                </button>
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-pea-purple to-pea-dark hover:from-pea-dark hover:to-pea-purple text-white font-semibold text-sm shadow-lg shadow-purple-200 transition flex items-center justify-center gap-2">
+                  <i data-lucide="send" class="w-4 h-4"></i>
+                  <span>ยื่นคำขอ Substation Area Work Permit</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1670,6 +1716,10 @@
             <button type="button" onclick="uploadSelectedPermitPdfToDrive()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-sm transition">
               <i data-lucide="cloud-upload" class="w-4 h-4"></i>
               <span>อัปโหลด PDF ขึ้น Drive</span>
+            </button>
+            <button type="button" onclick="openSelectedPermitLineShare()" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="message-circle" class="w-4 h-4"></i>
+              <span>แจ้งเตือน LINE</span>
             </button>
             <button type="button" onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-pea-purple hover:bg-pea-dark text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-sm transition">
               <i data-lucide="printer" class="w-4 h-4"></i>
@@ -4971,33 +5021,40 @@
       document.getElementById('refDocNote').value = '';
       renderPendingRefFilesPreview();
 
-      saveAllToLocalStorage();
-      refreshSmartFormHelpers();
-      updateCounters();
-      renderNotifications();
-      renderVerifierQueue();
-      renderApproverQueue();
-      renderStatusTracker();
-      renderDocCardsList(newPermit.id);
-      renderPermitDocument();
-      renderScheduleOverrides();
+      try { saveAllToLocalStorage(); } catch (_) {}
+      try { refreshSmartFormHelpers(); } catch (_) {}
+      try { updateCounters(); } catch (_) {}
+      try { renderNotifications(); } catch (_) {}
+      try { renderRequestApproverQueue(); } catch (_) {}
+      try { renderVerifierQueue(); } catch (_) {}
+      try { renderApproverQueue(); } catch (_) {}
+      try { renderStatusTracker(); } catch (_) {}
+      try { renderDocCardsList(newPermit.id); } catch (_) {}
+      try { renderPermitDocument(); } catch (_) {}
+      try { renderScheduleOverrides(); } catch (_) {}
+      try {
+        dispatchExternalNotification(
+          autoSign ? 'ยื่นคำขอใหม่ (รอ หผ. อนุมัติจัดทำคำขอ)' : 'ยื่นคำขอใหม่ (รอ หผ. อนุมัติจัดทำคำขอ)',
+          newPermit,
+          internalVerifierNote
+        );
+      } catch (_) {}
 
-      dispatchExternalNotification(
-        autoSign ? 'ยื่นคำขอใหม่ (ผ่านตรวจอัตโนมัติ -> รอ กปบ.(ก3) อนุมัติ)' : 'ยื่นคำขอใหม่ (รอผู้ตรวจสอบ ผจฟ.1)',
-        newPermit,
-        internalVerifierNote
-      );
-
-      document.getElementById('override-conflict-chk').checked = false;
-      document.getElementById('overlapReason').value = '';
-      toggleOverlapReasonBox();
-      refreshPermitNumberPreview();
-      runLiveCheck();
+      try {
+        const chkEl = document.getElementById('override-conflict-chk');
+        const ovEl = document.getElementById('overlapReason');
+        if (chkEl) chkEl.checked = false;
+        if (ovEl) ovEl.value = '';
+        toggleOverlapReasonBox();
+        refreshPermitNumberPreview();
+        runLiveCheck();
+      } catch (_) {}
 
       showToast(`ยื่นคำขอ ${newPermit.permitNo} เรียบร้อยแล้ว`, 'success');
       const allowed = ROLE_ALLOWED_TABS[currentUser.role] || [];
       if (allowed.includes('req_approver')) switchTab('req_approver');
       else switchTab('status');
+      openLineShareModal(newPermit.id);
     }
 
     // =========================================================================
@@ -5075,7 +5132,7 @@
                   <input type="text" id="req-approver-note-${p.id}" placeholder="ระบุความเห็นเพิ่มเติม (ถ้ามี)..." class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs sm:text-sm bg-white">
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <button type="button" onclick="openDocumentPreview('${p.id}')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">ตรวจสอบร่าง PDF</button>
+                  <div class="flex items-center gap-2"><button type="button" onclick="openDocumentPreview('${p.id}')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">ตรวจสอบร่าง PDF</button><button type="button" onclick="openLineShareModal('${p.id}')" class="px-3 py-2 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-700 text-white">แจ้ง LINE</button></div>
                   <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="requestApproverReject('${p.id}')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 transition flex items-center gap-1.5">
                       <i data-lucide="x-circle" class="w-4 h-4"></i>
@@ -5161,6 +5218,7 @@
       renderPermitDocument();
       dispatchExternalNotification(`หผ. อนุมัติจัดทำคำขอแล้ว (${headFullName})`, p, note);
       showToast(`ลงนามอนุมัติจัดทำคำขอ ${p.permitNo} และส่งต่อ กปบ. เรียบร้อยแล้ว!`, 'success');
+      openLineShareModal(p.id);
     }
 
     function requestApproverReject(id) {
@@ -5188,6 +5246,7 @@
       renderRequestApproverQueue();
       renderStatusTracker();
       showToast(`ส่งกลับคำขอ ${p.permitNo} ให้ผู้ร่างแก้ไขแล้ว`, 'warning');
+      openLineShareModal(p.id);
     }
 
     // =========================================================================
@@ -5349,10 +5408,16 @@
             ` : `
               <div class="flex items-center justify-between pt-2 text-xs text-slate-500">
                 <span>${p.verifierAdditionalNotes ? 'บันทึกผู้ตรวจสอบ: ' + p.verifierAdditionalNotes : ''}</span>
-                <button type="button" onclick="openDocumentPreview('${p.id}')" class="text-pea-purple hover:underline font-semibold flex items-center gap-1">
-                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                  <span>ดูใบอนุญาตทำงาน</span>
-                </button>
+                <div class="flex items-center gap-3">
+                  <button type="button" onclick="openLineShareModal('${p.id}')" class="text-emerald-700 hover:underline font-bold flex items-center gap-1">
+                    <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                    <span>แจ้ง LINE</span>
+                  </button>
+                  <button type="button" onclick="openDocumentPreview('${p.id}')" class="text-pea-purple hover:underline font-semibold flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    <span>ดูใบอนุญาตทำงาน</span>
+                  </button>
+                </div>
               </div>
             `}
           </div>
@@ -5407,6 +5472,7 @@
       renderPermitDocument();
       dispatchExternalNotification(`ผ่านผู้ตรวจสอบ (${signerName}) -> รอ กปบ.(ก3) อนุมัติ`, p, p.verifierAdditionalNotes);
       showToast(`ลงนามผู้ตรวจสอบ (${signerName}) เรียบร้อย! ส่งต่อไปยังผู้อนุมัติ กปบ.(ก3) แล้ว`, 'success');
+      openLineShareModal(p.id);
     }
 
     function verifierReject(id) {
@@ -5435,6 +5501,7 @@
       renderStatusTracker();
       dispatchExternalNotification(`ตีกลับคำขอโดยผู้ตรวจสอบ (${signerName})`, p, p.verifierAdditionalNotes);
       showToast(`ตีกลับใบคำขอ ${p.permitNo} เรียบร้อยแล้ว`, 'warning');
+      openLineShareModal(p.id);
     }
 
     // =========================================================================
@@ -5499,6 +5566,10 @@
             ` : ''}
 
             <div class="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button type="button" onclick="openLineShareModal('${p.id}')" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                <span>แจ้ง LINE</span>
+              </button>
               <button type="button" onclick="openDocumentPreview('${p.id}')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5">
                 <i data-lucide="eye" class="w-4 h-4"></i>
                 <span>ตรวจสอบแบบฟอร์มใบอนุญาต</span>
@@ -5545,6 +5616,7 @@
       renderStatusTracker();
       dispatchExternalNotification(`ไม่อนุมัติ / ส่งกลับโดย กปบ.(ก3) (${signerName})`, p);
       showToast(`ไม่อนุมัติใบคำขอ ${p.permitNo} และส่งแจ้งเตือนกลับแล้ว`, 'warning');
+      openLineShareModal(p.id);
     }
 
     function executiveApprove(id) {
@@ -5589,6 +5661,7 @@
       renderPermitDocument();
       dispatchExternalNotification(`อนุมัติใบอนุญาตทำงานแล้ว โดย ${approverFullName}`, p, 'พร้อมเข้าปฏิบัติงานตามกำหนดการ');
       showToast(`อนุมัติ ${p.permitNo} สำเร็จ!`, 'success');
+      openLineShareModal(p.id);
       if (isOnlineCloudConfigured()) { uploadPermitPdfToGoogleDrive(p.id); }
       switchTab('status');
     }
@@ -5933,6 +6006,10 @@
                 <button type="button" onclick="downloadPermitPdfById('${p.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1">
                   <i data-lucide="download" class="w-3.5 h-3.5"></i>
                   <span>ดาวน์โหลด PDF</span>
+                </button>
+                <button type="button" onclick="openLineShareModal('${p.id}')" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-1">
+                  <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                  <span>ส่งต่อทาง LINE</span>
                 </button>
                 <button type="button" onclick="openDocumentPreview('${p.id}')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-purple-50 text-pea-dark border border-purple-200 font-semibold">
                   เปิดใบอนุญาต / รายงานผล
@@ -6444,6 +6521,7 @@
       renderStatusTracker();
       dispatchExternalNotification(`รายงานผลปิดงาน (${reporterName})`, p, closeState);
       showToast(`บันทึกรายงานผลการปฏิบัติงานของ ${p.permitNo} เรียบร้อยแล้ว`, 'success');
+      openLineShareModal(p.id);
     }
 
     function formatShortThaiSlashDate(isoStr) {
@@ -7818,6 +7896,106 @@
       if (wBody && wBody.children.length === 0) addWorkerRow();
       const wpBody = document.getElementById('workplan-table-body');
       if (wpBody && wpBody.children.length === 0) addWorkPlanRow();
+    }
+
+
+    // =========================================================================
+    // 14. โมดูลส่งแจ้งเตือนเข้า LINE (1 คลิก — ฟรีไม่จำกัดโควตา) สำหรับทุกขั้นตอน
+    // =========================================================================
+    function buildLineNotificationMessage(p) {
+      if (!p) return '';
+      const dateStr = (p.endDate && p.endDate !== p.startDate)
+        ? `${formatThaiDate(p.startDate)} - ${formatThaiDate(p.endDate)} (${p.startTime}-${p.endTime} น.)`
+        : `${formatThaiDate(p.startDate)} (${p.startTime}-${p.endTime} น.)`;
+
+      const appUrl = (window.location.href && window.location.href.startsWith('http'))
+        ? window.location.href.split('#')[0]
+        : 'https://sub-c3.github.io/PEA-WP/';
+
+      const lines = [
+        `⚡ PEA Work Permit`,
+        `🔖 เลขที่: ${p.permitNo}`,
+        `📝 เรื่อง: ${p.workTitle} (สฟ.${p.station})`,
+        `📅 วันที่: ${dateStr}`,
+        `👤 ผู้ขออนุญาต: ${p.requesterFullName || p.supervisorName || '-'}`,
+        `🏢 สังกัด: ${p.requesterDept || p.orgName || '-'}`,
+        `🔗 ลิงก์ดำเนินการ: ${appUrl}`
+      ];
+      if (p.driveStorage && p.driveStorage.webViewLink) {
+        lines.push(`📄 ไฟล์ PDF: ${p.driveStorage.webViewLink}`);
+      }
+      return lines.join('\n');
+    }
+
+    function openLineShareModal(permitId, customStageTitle = '') {
+      const p = permits.find(item => item.id === permitId);
+      if (!p) return;
+      const modal = document.getElementById('line-share-modal');
+      const txtEl = document.getElementById('line-share-text');
+      const subEl = document.getElementById('line-share-subtitle');
+      if (!modal || !txtEl) return;
+      txtEl.value = buildLineNotificationMessage(p, customStageTitle);
+      if (subEl) subEl.textContent = `${p.permitNo} • สฟ.${p.station} — กดส่งเข้ากลุ่มหรือคัดลอกวางใน LINE PC ได้ทันที`;
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openLineShareFromCurrentRequestForm() {
+      const station = document.getElementById('stationSelect')?.value || '-';
+      const workTitle = document.getElementById('workTitle')?.value.trim() || '-';
+      const startDate = document.getElementById('startDate')?.value || '';
+      const endDate = document.getElementById('endDate')?.value || startDate;
+      const startTime = document.getElementById('startTime')?.value || '08:30';
+      const endTime = document.getElementById('endTime')?.value || '16:00';
+      const permitNo = document.getElementById('permitNumber')?.value || '-';
+      const requesterFullName = document.getElementById('requesterFullName')?.value.trim() || (currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : '-');
+      const requesterDept = document.getElementById('requesterDept')?.value.trim() || (currentUser ? currentUser.department : '-');
+      const draftObj = { permitNo, station, workTitle, startDate, endDate, startTime, endTime, requesterFullName, requesterDept };
+      const modal = document.getElementById('line-share-modal');
+      const txtEl = document.getElementById('line-share-text');
+      const subEl = document.getElementById('line-share-subtitle');
+      if (!modal || !txtEl) return;
+      txtEl.value = buildLineNotificationMessage(draftObj);
+      if (subEl) subEl.textContent = `${permitNo} • สฟ.${station} — กดส่งเข้ากลุ่มหรือคัดลอกวางใน LINE PC ได้ทันที`;
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openSelectedPermitLineShare() {
+      const id = document.getElementById('doc-selector')?.value;
+      if (id) openLineShareModal(id);
+      else showToast('กรุณาเลือกใบอนุญาตก่อนกดส่งแจ้ง LINE', 'warning');
+    }
+
+    function closeLineShareModal() {
+      const modal = document.getElementById('line-share-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function triggerLineShareUrl() {
+      const text = (document.getElementById('line-share-text')?.value || '').trim();
+      if (!text) return;
+      const url = `https://line.me/R/share?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function copyLineShareMessage() {
+      const txtEl = document.getElementById('line-share-text');
+      if (!txtEl) return;
+      const text = txtEl.value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('คัดลอกข้อความเรียบร้อยแล้ว! นำไปวางส่งใน LINE ได้ทันที', 'success');
+        }).catch(() => {
+          txtEl.select();
+          document.execCommand('copy');
+          showToast('คัดลอกข้อความเรียบร้อยแล้ว! นำไปวางส่งใน LINE ได้ทันที', 'success');
+        });
+      } else {
+        txtEl.select();
+        document.execCommand('copy');
+        showToast('คัดลอกข้อความเรียบร้อยแล้ว! นำไปวางส่งใน LINE ได้ทันที', 'success');
+      }
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
